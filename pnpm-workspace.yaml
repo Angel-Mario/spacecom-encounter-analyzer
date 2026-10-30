@@ -1,0 +1,12 @@
+packages:
+  - apps/*
+  - packages/*
+allowBuilds:
+  esbuild: true
+overrides:
+  vite@*: npm:@voidzero-dev/vite-plus-core@1.4.0
+catalog:
+  zod: ^4.5.4
+  typescript: ^6.0.3
+  "@types/node": ^26.4.1
+  varlock: 1.23.0

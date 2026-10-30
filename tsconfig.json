@@ -1,0 +1,3 @@
+{
+  "extends": "@spacecom-encounter-analyzer/config/tsconfig.base.json"
+}
