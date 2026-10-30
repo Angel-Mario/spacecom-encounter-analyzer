@@ -16,7 +16,11 @@
   },
   "scripts": {
     "build": "tsdown",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "test": "vp test run --root ../../"
+  },
+  "dependencies": {
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@spacecom-encounter-analyzer/config": "workspace:*",
