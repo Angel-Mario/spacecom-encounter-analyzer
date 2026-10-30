@@ -1,63 +1,89 @@
-# spacecom-encounter-analyzer
+# Spacecom Encounter Analyzer
 
-This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines Express, and more.
+Spacecom Encounter Analyzer is a standalone Node.js command-line application for
+analyzing geolocation datasets and, in the future, detecting encounters between
+monitored individuals. The repository is a pnpm monorepo; the reusable engine
+package is intended to be shared by the CLI and a future desktop application.
 
-## Features
+## Current architecture
 
-- **TypeScript** - For type safety and improved developer experience
-- **Express** - Fast, unopinionated web framework
-- **Node.js** - Runtime environment
-- **Husky** - Git hooks for code quality
-- **Oxlint** - Oxlint + Oxfmt (linting & formatting)
-- **Vite+** - Unified Vite toolchain, workspace task runner, linting, and formatting
+```text
+apps/
+  cli/       Node.js CLI
+packages/
+  config/    Shared TypeScript configuration
+  engine/    Reusable engine package
+```
 
-## Getting Started
+The CLI currently prints its name and version. The engine is only package
+infrastructure with an empty entry point. Dataset processing, domain models,
+parsers, and encounter detection are planned functionality and are not
+implemented. A future Electron + React desktop app is also planned, but does
+not exist yet.
 
-First, install the dependencies:
+## Technologies
+
+- Node.js with TypeScript and ESM
+- pnpm workspaces and workspace catalogs
+- Vite+ for task orchestration, linting, formatting, and checks
+- tsdown/Rolldown for package builds
+- Oxlint and Oxfmt through Ultracite
+- Husky for Git hooks
+
+## Prerequisites
+
+- Node.js 24.11 or newer
+- pnpm 12.14.0
+
+## Installation
 
 ```bash
 pnpm install
 ```
 
-Then, run the development server:
+## Development
+
+Run all workspace development tasks:
 
 ```bash
-pnpm run dev
+pnpm dev
 ```
 
-The API is running at [http://localhost:3000](http://localhost:3000).
+Build the engine and develop only the CLI:
 
-## Environment Configuration
-
-Each app owns its environment schema in `.env.schema`. Varlock generates `src/env.ts` during installation; run `pnpm run env:generate` after changing a schema. Commit schemas, and keep secrets in ignored env files or your deployment platform.
-
-Import the generated `ENV` accessor in application code. Shared database and auth packages receive configuration or initialized clients from the application. See [Varlock's monorepo guide](https://varlock.dev/guides/monorepos/).
-
-Bun's automatic env loading is disabled in `bunfig.toml`; the framework integration or server bootstrap loads Varlock. Node deployments must include Varlock and its dependencies alongside the app schema.
-
-Run standalone Node/Bun tools that use Varlock from the owning app directory so they load that app's schema and env files. `env:generate` only generates TypeScript files; it does not initialize environment values in a subsequent command.
-
-## Git Hooks and Formatting
-
-- Initialize hooks: `pnpm run prepare`
-- Run checks: `pnpm run check`
-
-## Project Structure
-
-```
-spacecom-encounter-analyzer/
-├── apps/
-│   └── server/      # Backend API (Express)
-├── packages/
+```bash
+pnpm dev:cli
 ```
 
-## Available Scripts
+## Builds
 
-- `pnpm run dev`: Start all applications in development mode
-- `pnpm run build`: Build all applications
-- `pnpm run dev:server`: Start only the server
-- `pnpm run check-types`: Check TypeScript types across all apps
-- `pnpm run check`: Run Vite+ format/lint checks and workspace TypeScript checks
-- `pnpm run lint`: Run Vite+ lint checks
-- `pnpm run format`: Run Vite+ formatting
-- `pnpm run staged`: Run Vite+ checks against staged files
+Build all workspace packages:
+
+```bash
+pnpm build
+```
+
+Build the engine and CLI:
+
+```bash
+pnpm build:cli
+```
+
+Run the compiled CLI after building:
+
+```bash
+pnpm --filter @spacecom-encounter-analyzer/cli start
+```
+
+## Type checking and code quality
+
+```bash
+pnpm check-types
+pnpm lint
+pnpm format
+pnpm check
+pnpm staged
+```
+
+Vite+ is the unified interface for these project checks. Testing is not
+configured yet and will be addressed separately.

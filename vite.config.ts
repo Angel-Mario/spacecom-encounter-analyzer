@@ -2,14 +2,24 @@ import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   lint: {
-    ignorePatterns: ["node_modules/**", "**/node_modules/**", "apps/server/dist/**"],
+    ignorePatterns: [
+      "node_modules/**",
+      "**/node_modules/**",
+      "apps/cli/dist/**",
+      "packages/engine/dist/**",
+    ],
     options: {
       typeAware: false,
       typeCheck: false,
     },
   },
   fmt: {
-    ignorePatterns: ["node_modules/**", "**/node_modules/**", "apps/server/dist/**"],
+    ignorePatterns: [
+      "node_modules/**",
+      "**/node_modules/**",
+      "apps/cli/dist/**",
+      "packages/engine/dist/**",
+    ],
     singleQuote: false,
     semi: true,
     sortPackageJson: true,
