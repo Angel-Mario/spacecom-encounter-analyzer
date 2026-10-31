@@ -6,10 +6,7 @@ export type {
   MonitoredPerson,
   Timestamp,
 } from "./domain.js";
-export {
-  calculateDistanceMeters,
-  EARTH_RADIUS_METERS,
-} from "./core/algorithms/haversine.js";
+export { calculateDistanceMeters, EARTH_RADIUS_METERS } from "./core/algorithms/haversine.js";
 export { classifyEncounter } from "./core/classifiers/encounter-classifier.js";
 export {
   detectEncounters,

@@ -24,6 +24,7 @@
     "test": "vp test run --root ../../"
   },
   "dependencies": {
+    "varlock": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

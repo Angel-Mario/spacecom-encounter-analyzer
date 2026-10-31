@@ -54,7 +54,7 @@ const analysis = await analyzeDatasetParallel("datasets/inputs/dataset7.txt");
 console.log(analysis.encounters.length, analysis.records);
 ```
 
-`options.chunkBytes` ajusta o tamanho alvo por bloco (8 MiB por padrão) e `options.maxWorkers` limita a quantidade de workers (`os.availableParallelism() - 1` por padrão). Cada ponto de corte é planejado com uma pequena varredura de janela ao redor da posição alvo, então o custo do planejamento não cresce com o tamanho do arquivo. O maior dataset do desafio processa várias vezes mais rápido que o caminho em fluxo em uma máquina com vários núcleos, com o mesmo resultado de encontros.
+`options.chunkBytes` ajusta o tamanho alvo por bloco (8 MiB por padrão) e `options.maxWorkers` limita a quantidade de workers (`os.availableParallelism() - 1` por padrão). Quando ambas as opções ficam ausentes, o mesmo ajuste pode ser feito pelas variáveis de ambiente `SPACECOM_CHUNK_BYTES` e `SPACECOM_MAX_WORKERS`, declaradas e validadas pelo [varlock](https://varlock.dev) no `.env.schema` do repositório; os padrões acima valem quando elas não estão definidas. Cada ponto de corte é planejado com uma pequena varredura de janela ao redor da posição alvo, então o custo do planejamento não cresce com o tamanho do arquivo. O maior dataset do desafio processa várias vezes mais rápido que o caminho em fluxo em uma máquina com vários núcleos, com o mesmo resultado de encontros.
 
 ## Exemplo de uso da API
 
@@ -67,9 +67,7 @@ import {
   readDatasetGroups,
 } from "@spacecom-encounter-analyzer/engine";
 
-for await (const candidate of detectEncounters(
-  readDatasetGroups("datasets/inputs/dataset1.txt")
-)) {
+for await (const candidate of detectEncounters(readDatasetGroups("datasets/inputs/dataset1.txt"))) {
   console.log(classifyEncounter(candidate));
 }
 ```

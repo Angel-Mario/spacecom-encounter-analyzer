@@ -1,12 +1,5 @@
-import type {
-  EncounterCandidate,
-  MonitoredPerson,
-  Timestamp,
-} from "../../domain.js";
-import {
-  calculateDistanceMeters,
-  EARTH_RADIUS_METERS,
-} from "../algorithms/haversine.js";
+import type { EncounterCandidate, MonitoredPerson, Timestamp } from "../../domain.js";
+import { calculateDistanceMeters, EARTH_RADIUS_METERS } from "../algorithms/haversine.js";
 
 export const MAX_ENCOUNTER_DISTANCE_METERS = 20;
 
@@ -20,9 +13,7 @@ const NAIVE_PAIR_THRESHOLD = 40;
 // so pairs beyond the verify band skip the haversine formula, and pairs inside
 // the band still get the exact decision that the haversine comparison gives.
 const CHORD_LIMIT_METERS =
-  2 *
-  EARTH_RADIUS_METERS *
-  Math.sin(MAX_ENCOUNTER_DISTANCE_METERS / (2 * EARTH_RADIUS_METERS));
+  2 * EARTH_RADIUS_METERS * Math.sin(MAX_ENCOUNTER_DISTANCE_METERS / (2 * EARTH_RADIUS_METERS));
 const CHORD_VERIFY_SQUARED_METERS = (CHORD_LIMIT_METERS + 1e-3) ** 2;
 
 type TimestampGroup = readonly [Timestamp, readonly MonitoredPerson[]];
@@ -41,10 +32,7 @@ interface SpatialEntry {
   index: number;
 }
 
-const getSpatialEntry = (
-  person: MonitoredPerson,
-  index: number
-): SpatialEntry => {
+const getSpatialEntry = (person: MonitoredPerson, index: number): SpatialEntry => {
   const latitude = (person.latitude * Math.PI) / 180;
   const longitude = (person.longitude * Math.PI) / 180;
   const latitudeRadius = EARTH_RADIUS_METERS * Math.cos(latitude);
@@ -65,8 +53,7 @@ const getSpatialEntry = (
 };
 
 const hashCell = (cellX: number, cellY: number, cellZ: number): number => {
-  let hash =
-    ((cellX % CELL_HASH_MODULUS) + CELL_HASH_MODULUS) % CELL_HASH_MODULUS;
+  let hash = ((cellX % CELL_HASH_MODULUS) + CELL_HASH_MODULUS) % CELL_HASH_MODULUS;
   hash = (hash * CELL_HASH_MULTIPLIER + cellY) % CELL_HASH_MODULUS;
   return (hash * CELL_HASH_MULTIPLIER + cellZ) % CELL_HASH_MODULUS;
 };
@@ -74,7 +61,7 @@ const hashCell = (cellX: number, cellY: number, cellZ: number): number => {
 const findCandidateIndexes = (
   firstEntry: SpatialEntry,
   spatialIndex: Map<number, SpatialEntry[]>,
-  candidateIndexes: number[]
+  candidateIndexes: number[],
 ): void => {
   // Hash collisions only add work; exact cell checks discard non-neighboring candidates.
   for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
@@ -84,8 +71,8 @@ const findCandidateIndexes = (
           hashCell(
             firstEntry.cellX + offsetX,
             firstEntry.cellY + offsetY,
-            firstEntry.cellZ + offsetZ
-          )
+            firstEntry.cellZ + offsetZ,
+          ),
         );
         if (!bucket) {
           continue;
@@ -113,7 +100,7 @@ const considerEncounter = (
   firstEntry: SpatialEntry,
   second: MonitoredPerson,
   secondEntry: SpatialEntry,
-  detectedPairs: Set<string>
+  detectedPairs: Set<string>,
 ): number | undefined => {
   if (first.id === second.id) {
     return undefined;
@@ -138,7 +125,7 @@ const considerEncounter = (
 
   const distanciaMetros = calculateDistanceMeters(
     { lat: first.latitude, lon: first.longitude },
-    { lat: second.latitude, lon: second.longitude }
+    { lat: second.latitude, lon: second.longitude },
   );
 
   if (distanciaMetros >= MAX_ENCOUNTER_DISTANCE_METERS) {
@@ -151,12 +138,12 @@ const considerEncounter = (
 
 const validateGroupTimestamps = (
   timestamp: Timestamp,
-  people: readonly MonitoredPerson[]
+  people: readonly MonitoredPerson[],
 ): void => {
   for (const person of people) {
     if (person.timestamp !== timestamp) {
       throw new Error(
-        `Timestamp group "${timestamp}" contains a record from "${person.timestamp}"`
+        `Timestamp group "${timestamp}" contains a record from "${person.timestamp}"`,
       );
     }
   }
@@ -164,7 +151,7 @@ const validateGroupTimestamps = (
 
 export const detectEncountersInGroup = function* detectEncountersInGroup(
   timestamp: Timestamp,
-  people: readonly MonitoredPerson[]
+  people: readonly MonitoredPerson[],
 ): Generator<EncounterCandidate> {
   validateGroupTimestamps(timestamp, people);
   if (people.length < 2) {
@@ -184,11 +171,7 @@ export const detectEncountersInGroup = function* detectEncountersInGroup(
         continue;
       }
 
-      for (
-        let secondIndex = firstIndex + 1;
-        secondIndex < people.length;
-        secondIndex += 1
-      ) {
+      for (let secondIndex = firstIndex + 1; secondIndex < people.length; secondIndex += 1) {
         const second = people[secondIndex];
         const secondEntry = spatialEntries[secondIndex];
         if (!second || !secondEntry) {
@@ -200,7 +183,7 @@ export const detectEncountersInGroup = function* detectEncountersInGroup(
           firstEntry,
           second,
           secondEntry,
-          detectedPairs
+          detectedPairs,
         );
         if (distanciaMetros !== undefined) {
           yield { distanciaMetros, participants: [first, second], timestamp };
@@ -225,11 +208,7 @@ export const detectEncountersInGroup = function* detectEncountersInGroup(
 
   const candidateIndexes: number[] = [];
 
-  for (
-    let firstIndex = 0;
-    firstIndex < spatialEntries.length;
-    firstIndex += 1
-  ) {
+  for (let firstIndex = 0; firstIndex < spatialEntries.length; firstIndex += 1) {
     const firstEntry = spatialEntries[firstIndex];
     const first = people[firstIndex];
     if (!firstEntry || !first) {
@@ -244,8 +223,7 @@ export const detectEncountersInGroup = function* detectEncountersInGroup(
     // encounter order as the previous baseline (ascending pair indexes).
     if (candidateIndexes.length > 1) {
       candidateIndexes.sort(
-        (firstCandidateIndex, secondCandidateIndex) =>
-          firstCandidateIndex - secondCandidateIndex
+        (firstCandidateIndex, secondCandidateIndex) => firstCandidateIndex - secondCandidateIndex,
       );
     }
 
@@ -263,7 +241,7 @@ export const detectEncountersInGroup = function* detectEncountersInGroup(
         firstEntry,
         second,
         secondEntry,
-        detectedPairs
+        detectedPairs,
       );
       if (distanciaMetros !== undefined) {
         yield { distanciaMetros, participants: [first, second], timestamp };
@@ -273,7 +251,7 @@ export const detectEncountersInGroup = function* detectEncountersInGroup(
 };
 
 export const detectEncounters = async function* detectEncounters(
-  groups: TimestampGroups
+  groups: TimestampGroups,
 ): AsyncGenerator<EncounterCandidate> {
   for await (const [timestamp, people] of groups) {
     yield* detectEncountersInGroup(timestamp, people);

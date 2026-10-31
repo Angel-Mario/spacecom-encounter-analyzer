@@ -74,9 +74,7 @@ const integerSchema = z
   .string()
   .regex(INTEGER_PATTERN, "Must be an integer")
   .transform(Number)
-  .pipe(
-    z.number().int().min(Number.MIN_SAFE_INTEGER).max(Number.MAX_SAFE_INTEGER)
-  );
+  .pipe(z.number().int().min(Number.MIN_SAFE_INTEGER).max(Number.MAX_SAFE_INTEGER));
 
 const factionSchema = z
   .union([z.literal(""), integerSchema])
@@ -88,8 +86,7 @@ const timestampSchema = z
   .refine((value) => {
     const date = new Date(`${value.replace(" ", "T")}Z`);
     return (
-      Number.isFinite(date.getTime()) &&
-      date.toISOString().slice(0, 19).replace("T", " ") === value
+      Number.isFinite(date.getTime()) && date.toISOString().slice(0, 19).replace("T", " ") === value
     );
   }, "Must be a valid date and time")
   .transform((value): Timestamp => value);
@@ -101,15 +98,11 @@ const coordinateSchema = (minimum: number, maximum: number) =>
     .transform(Number)
     .pipe(z.number().min(minimum).max(maximum));
 
-const protectiveMeasureSchema = z
-  .enum(["true", "false"])
-  .transform((value) => value === "true");
+const protectiveMeasureSchema = z.enum(["true", "false"]).transform((value) => value === "true");
 
 const restrictedIdsSchema = z
   .string()
-  .transform((value) =>
-    value === "" ? [] : value.split(",").map((id) => id.trim())
-  )
+  .transform((value) => (value === "" ? [] : value.split(",").map((id) => id.trim())))
   .pipe(z.array(integerSchema));
 
 export const DatasetHeadersSchema = z.tuple([
@@ -149,7 +142,7 @@ export const DatasetRowSchema = z
       longitude,
       restrictedIds: idsRestricaoMedida,
       timestamp,
-    })
+    }),
   );
 
 const parseDelimitedRecord = (line: string, lineNumber: number): string[] => {
@@ -222,7 +215,7 @@ const SAFE_INTEGER_MAXIMUM = Number.MAX_SAFE_INTEGER;
 const requireIntegerField = (
   field: string | undefined,
   label: string,
-  issues: string[]
+  issues: string[],
 ): number => {
   if (field === undefined || !INTEGER_PATTERN.test(field)) {
     issues.push(`${label}: Must be an integer`);
@@ -232,7 +225,7 @@ const requireIntegerField = (
   const parsed = Number(field);
   if (!Number.isSafeInteger(parsed)) {
     issues.push(
-      `${label}: expected integer between ${SAFE_INTEGER_MINIMUM} and ${SAFE_INTEGER_MAXIMUM}`
+      `${label}: expected integer between ${SAFE_INTEGER_MINIMUM} and ${SAFE_INTEGER_MAXIMUM}`,
     );
     return Number.NaN;
   }
@@ -245,7 +238,7 @@ const requireCoordinateField = (
   minimum: number,
   maximum: number,
   label: string,
-  issues: string[]
+  issues: string[],
 ): number => {
   if (field === undefined || !COORDINATE_PATTERN.test(field)) {
     issues.push(`${label}: Must be a decimal number`);
@@ -260,10 +253,7 @@ const requireCoordinateField = (
   return parsed;
 };
 
-const requireProtectiveMeasureField = (
-  field: string | undefined,
-  issues: string[]
-): boolean => {
+const requireProtectiveMeasureField = (field: string | undefined, issues: string[]): boolean => {
   if (field === "true") {
     return true;
   }
@@ -276,10 +266,7 @@ const requireProtectiveMeasureField = (
   return false;
 };
 
-const requireTimestampField = (
-  field: string | undefined,
-  issues: string[]
-): Timestamp => {
+const requireTimestampField = (field: string | undefined, issues: string[]): Timestamp => {
   if (field !== undefined && isValidTimestamp(field)) {
     return field;
   }
@@ -293,10 +280,7 @@ const requireTimestampField = (
   return field;
 };
 
-const parseRestrictedIdsField = (
-  field: string | undefined,
-  issues: string[]
-): number[] => {
+const parseRestrictedIdsField = (field: string | undefined, issues: string[]): number[] => {
   if (field === undefined || field === "") {
     return [];
   }
@@ -305,11 +289,7 @@ const parseRestrictedIdsField = (
   const ids: number[] = [];
 
   for (const [index, part] of parts.entries()) {
-    const parsed = requireIntegerField(
-      part.trim(),
-      `idsRestricaoMedida.${index}`,
-      issues
-    );
+    const parsed = requireIntegerField(part.trim(), `idsRestricaoMedida.${index}`, issues);
     if (Number.isSafeInteger(parsed)) {
       ids.push(parsed);
     }
@@ -330,26 +310,17 @@ const isBlankLine = (line: string): boolean => {
 
 export const parseDatasetHeader = (line: string): void => {
   const [firstHeader, ...remainingHeaders] = parseDelimitedRecord(line, 1);
-  const header = [
-    firstHeader?.replace(/^\uFEFF/u, "") ?? "",
-    ...remainingHeaders,
-  ];
+  const header = [firstHeader?.replace(/^\uFEFF/u, "") ?? "", ...remainingHeaders];
   const parsedHeader = DatasetHeadersSchema.safeParse(header);
 
   if (!parsedHeader.success) {
-    throw new Error(
-      `Invalid dataset header: expected ${DATASET_HEADERS.join(";")}`,
-      {
-        cause: parsedHeader.error,
-      }
-    );
+    throw new Error(`Invalid dataset header: expected ${DATASET_HEADERS.join(";")}`, {
+      cause: parsedHeader.error,
+    });
   }
 };
 
-export const parseDatasetRow = (
-  line: string,
-  lineNumber: number
-): MonitoredPerson | undefined => {
+export const parseDatasetRow = (line: string, lineNumber: number): MonitoredPerson | undefined => {
   if (isBlankLine(line)) {
     return undefined;
   }
@@ -357,7 +328,7 @@ export const parseDatasetRow = (
   const fields = parseDelimitedRecord(line, lineNumber);
   if (fields.length !== DATASET_HEADERS.length) {
     throw new Error(
-      `Invalid dataset row ${lineNumber}: expected ${DATASET_HEADERS.length} fields, received ${fields.length}`
+      `Invalid dataset row ${lineNumber}: expected ${DATASET_HEADERS.length} fields, received ${fields.length}`,
     );
   }
 
@@ -379,30 +350,13 @@ export const parseDatasetRow = (
       : requireIntegerField(faccaoMonitorado, "faccaoMonitorado", issues);
   const id = requireIntegerField(idMonitorado, "idMonitorado", issues);
   const restrictedIds = parseRestrictedIdsField(idsRestricaoMedida, issues);
-  const parsedLatitude = requireCoordinateField(
-    latitude,
-    -90,
-    90,
-    "latitude",
-    issues
-  );
-  const parsedLongitude = requireCoordinateField(
-    longitude,
-    -180,
-    180,
-    "longitude",
-    issues
-  );
-  const hasProtectiveMeasure = requireProtectiveMeasureField(
-    medidaProtetiva,
-    issues
-  );
+  const parsedLatitude = requireCoordinateField(latitude, -90, 90, "latitude", issues);
+  const parsedLongitude = requireCoordinateField(longitude, -180, 180, "longitude", issues);
+  const hasProtectiveMeasure = requireProtectiveMeasureField(medidaProtetiva, issues);
   const parsedTimestamp = requireTimestampField(timestamp, issues);
 
   if (issues.length > 0) {
-    throw new Error(
-      `Invalid dataset row ${lineNumber}: ${describeIssues(issues)}`
-    );
+    throw new Error(`Invalid dataset row ${lineNumber}: ${describeIssues(issues)}`);
   }
 
   return {

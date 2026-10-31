@@ -1,3 +1,5 @@
+import "varlock/auto-load";
+
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -33,9 +35,7 @@ const buildDataset = (groups: PlannedGroup[]): string => {
   return `${lines.join("\n")}\n`;
 };
 
-const serialReference = async (
-  filePath: string
-): Promise<ParallelDatasetAnalysis> => {
+const serialReference = async (filePath: string): Promise<ParallelDatasetAnalysis> => {
   const reference: ParallelDatasetAnalysis = {
     encounters: [],
     records: 0,
@@ -54,11 +54,9 @@ const serialReference = async (
 
 const withTemporaryDataset = async (
   content: string,
-  run: (inputPath: string) => Promise<void>
+  run: (inputPath: string) => Promise<void>,
 ): Promise<void> => {
-  const temporaryDirectory = await mkdtemp(
-    path.join(tmpdir(), "spacecom-parallel-test-")
-  );
+  const temporaryDirectory = await mkdtemp(path.join(tmpdir(), "spacecom-parallel-test-"));
 
   try {
     const inputPath = path.join(temporaryDirectory, "input.txt");
@@ -92,7 +90,7 @@ describe("analyzeDatasetParallel", () => {
         expect(parallel.records).toBe(105);
         expect(parallel.encounters).toHaveLength(2185);
         expect(parallel).toEqual(reference);
-      }
+      },
     );
   });
 
@@ -111,17 +109,17 @@ describe("analyzeDatasetParallel", () => {
           chunkBytes: 256,
         }).then(
           () => null,
-          (error: unknown) => error
+          (error: unknown) => error,
         );
 
         expect(failure).toBeInstanceOf(UnsortedTimestampsError);
         expect(
           failure instanceof Error &&
             /"2026-10-30 18:00:00" follows "2026-10-30 18:00:10" at record 11/u.test(
-              failure.message
-            )
+              failure.message,
+            ),
         ).toBe(true);
-      }
+      },
     );
   });
 
@@ -136,7 +134,7 @@ describe("analyzeDatasetParallel", () => {
         expect(parallel.records).toBe(3);
         expect(parallel.encounters).toHaveLength(3);
         expect(parallel).toEqual(reference);
-      }
+      },
     );
   });
 
@@ -166,7 +164,37 @@ describe("analyzeDatasetParallel", () => {
         expect(parallel.records).toBe(6);
         expect(parallel.encounters).toHaveLength(4);
         expect(parallel).toEqual(reference);
-      }
+      },
     );
+  });
+
+  it("honors SPACECOM_CHUNK_BYTES and SPACECOM_MAX_WORKERS from environment variables", async () => {
+    const originalChunkBytes = process.env.SPACECOM_CHUNK_BYTES;
+    const originalMaxWorkers = process.env.SPACECOM_MAX_WORKERS;
+
+    try {
+      process.env.SPACECOM_CHUNK_BYTES = "128";
+      process.env.SPACECOM_MAX_WORKERS = "2";
+
+      await withTemporaryDataset(
+        buildDataset([
+          { records: 3, timestamp: "2026-10-30 18:00:00" },
+          { records: 3, timestamp: "2026-10-30 18:00:05" },
+        ]),
+        async (inputPath) => {
+          const parallel = await analyzeDatasetParallel(inputPath);
+          const reference = await serialReference(inputPath);
+
+          expect(parallel.timestamps).toBe(2);
+          expect(parallel.records).toBe(6);
+          expect(parallel).toEqual(reference);
+        },
+      );
+    } finally {
+      if (originalChunkBytes === undefined) delete process.env.SPACECOM_CHUNK_BYTES;
+      else process.env.SPACECOM_CHUNK_BYTES = originalChunkBytes;
+      if (originalMaxWorkers === undefined) delete process.env.SPACECOM_MAX_WORKERS;
+      else process.env.SPACECOM_MAX_WORKERS = originalMaxWorkers;
+    }
   });
 });

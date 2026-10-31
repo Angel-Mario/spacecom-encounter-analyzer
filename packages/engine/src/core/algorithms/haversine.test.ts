@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { EARTH_RADIUS_METERS, calculateDistanceMeters } from "./haversine.js";
 
 describe("calculateDistanceMeters", () => {

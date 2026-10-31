@@ -1,10 +1,7 @@
 [
   {
     "distanciaMetros": 8.053893258980052,
-    "monitoradosEncontro": [
-      10,
-      17
-    ],
+    "monitoradosEncontro": [10, 17],
     "posicoes": {
       "10": {
         "lat": -21.52255,
@@ -20,10 +17,7 @@
   },
   {
     "distanciaMetros": 12.865565240118276,
-    "monitoradosEncontro": [
-      28,
-      31
-    ],
+    "monitoradosEncontro": [28, 31],
     "posicoes": {
       "28": {
         "lat": -14.0732,
@@ -39,10 +33,7 @@
   },
   {
     "distanciaMetros": 8.699951454703939,
-    "monitoradosEncontro": [
-      28,
-      31
-    ],
+    "monitoradosEncontro": [28, 31],
     "posicoes": {
       "28": {
         "lat": -14.07323,
@@ -58,10 +49,7 @@
   },
   {
     "distanciaMetros": 13.301034510696576,
-    "monitoradosEncontro": [
-      28,
-      31
-    ],
+    "monitoradosEncontro": [28, 31],
     "posicoes": {
       "28": {
         "lat": -14.07326,
@@ -77,10 +65,7 @@
   },
   {
     "distanciaMetros": 8.964293240456625,
-    "monitoradosEncontro": [
-      35,
-      38
-    ],
+    "monitoradosEncontro": [35, 38],
     "posicoes": {
       "35": {
         "lat": -5.02154,
@@ -96,10 +81,7 @@
   },
   {
     "distanciaMetros": 11.291419868951346,
-    "monitoradosEncontro": [
-      4,
-      19
-    ],
+    "monitoradosEncontro": [4, 19],
     "posicoes": {
       "4": {
         "lat": -28.0367,
@@ -115,10 +97,7 @@
   },
   {
     "distanciaMetros": 11.532319108677992,
-    "monitoradosEncontro": [
-      11,
-      39
-    ],
+    "monitoradosEncontro": [11, 39],
     "posicoes": {
       "11": {
         "lat": -23.5511,
@@ -134,10 +113,7 @@
   },
   {
     "distanciaMetros": 8.250959593760573,
-    "monitoradosEncontro": [
-      5,
-      14
-    ],
+    "monitoradosEncontro": [5, 14],
     "posicoes": {
       "5": {
         "lat": -31.96766,
@@ -153,10 +129,7 @@
   },
   {
     "distanciaMetros": 10.764204996492433,
-    "monitoradosEncontro": [
-      15,
-      16
-    ],
+    "monitoradosEncontro": [15, 16],
     "posicoes": {
       "15": {
         "lat": -18.26761,
@@ -172,10 +145,7 @@
   },
   {
     "distanciaMetros": 9.413814772862548,
-    "monitoradosEncontro": [
-      9,
-      20
-    ],
+    "monitoradosEncontro": [9, 20],
     "posicoes": {
       "9": {
         "lat": -22.57215,

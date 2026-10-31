@@ -8,6 +8,7 @@ import {
   resolveWorkspacePath,
 } from "./application.js";
 import type { UnsortedStrategy } from "./application.js";
+import { ENV } from "./env.js";
 
 interface CliOptions {
   command: "process" | "process-all" | "benchmark" | "help";
@@ -20,6 +21,14 @@ interface CliOptions {
 const DEFAULT_INPUT_DIRECTORY = path.join("datasets", "inputs");
 const DEFAULT_OUTPUT_DIRECTORY = path.join("datasets", "outputs");
 
+const parseUnsortedStrategy = (value: string): UnsortedStrategy => {
+  if (value === "prompt" || value === "external" || value === "cancel") {
+    return value;
+  }
+
+  throw new Error(`Invalid unsorted strategy "${value}". Use prompt, external, or cancel.`);
+};
+
 const readOptionValue = (args: string[], index: number, option: string): string => {
   const value = args[index + 1];
   if (!value || value.startsWith("--")) {
@@ -27,14 +36,6 @@ const readOptionValue = (args: string[], index: number, option: string): string 
   }
 
   return value;
-};
-
-const parseUnsortedStrategy = (value: string): UnsortedStrategy => {
-  if (value === "prompt" || value === "external" || value === "cancel") {
-    return value;
-  }
-
-  throw new Error(`Invalid --unsorted value "${value}". Use prompt, external, or cancel.`);
 };
 
 const isCommand = (value: string): value is CliOptions["command"] =>
@@ -45,9 +46,9 @@ export const parseArguments = (args: string[]): CliOptions => {
   if (!commandArgument || commandArgument === "--help" || commandArgument === "-h") {
     return {
       command: "help",
-      inputDirectory: DEFAULT_INPUT_DIRECTORY,
-      outputDirectory: DEFAULT_OUTPUT_DIRECTORY,
-      unsortedStrategy: "prompt",
+      inputDirectory: ENV.SPACECOM_INPUT_DIR ?? DEFAULT_INPUT_DIRECTORY,
+      outputDirectory: ENV.SPACECOM_OUTPUT_DIR ?? DEFAULT_OUTPUT_DIRECTORY,
+      unsortedStrategy: ENV.SPACECOM_UNSORTED_STRATEGY ?? "prompt",
     };
   }
 
@@ -56,9 +57,9 @@ export const parseArguments = (args: string[]): CliOptions => {
   }
 
   let datasetPath: string | undefined;
-  let inputDirectory = DEFAULT_INPUT_DIRECTORY;
-  let outputDirectory = DEFAULT_OUTPUT_DIRECTORY;
-  let unsortedStrategy: UnsortedStrategy = "prompt";
+  let inputDirectory = ENV.SPACECOM_INPUT_DIR ?? DEFAULT_INPUT_DIRECTORY;
+  let outputDirectory = ENV.SPACECOM_OUTPUT_DIR ?? DEFAULT_OUTPUT_DIRECTORY;
+  let unsortedStrategy = ENV.SPACECOM_UNSORTED_STRATEGY ?? "prompt";
   let outputOptionProvided = false;
 
   for (let index = 0; index < remainingArguments.length; index += 1) {
@@ -128,10 +129,16 @@ Commands:
   benchmark     Process each dataset and print execution and memory metrics without writing JSON.
 
 Options:
-  --input       Input directory for process-all and benchmark (default: datasets/inputs).
-  --output      Output directory (default: datasets/outputs).
-  --unsorted    Fallback behavior: prompt, external, or cancel (default: prompt).
-  --help        Show this help message.`;
+  --input       Input directory for process-all and benchmark (default: SPACECOM_INPUT_DIR or datasets/inputs).
+  --output      Output directory (default: SPACECOM_OUTPUT_DIR or datasets/outputs).
+  --unsorted    Fallback behavior: prompt, external, or cancel (default: SPACECOM_UNSORTED_STRATEGY or prompt).
+  --help        Show this help message.
+
+Environment:
+  Defaults are set in .env.schema at the repository root and can be overridden
+  with a git-ignored .env file or shell exports. Values are validated by
+  varlock on startup:
+  SPACECOM_INPUT_DIR, SPACECOM_OUTPUT_DIR, SPACECOM_UNSORTED_STRATEGY.`;
 
 const throwMissingDatasetPath = (): never => {
   throw new Error("The process command requires a dataset file path.");

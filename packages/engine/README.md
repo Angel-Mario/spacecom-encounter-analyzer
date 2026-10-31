@@ -54,7 +54,7 @@ const analysis = await analyzeDatasetParallel("datasets/inputs/dataset7.txt");
 console.log(analysis.encounters.length, analysis.records);
 ```
 
-`options.chunkBytes` tunes the target size per chunk (8 MiB by default) and `options.maxWorkers` caps the worker count (`os.availableParallelism() - 1` by default). Chunk boundaries are planned by scanning small windows around each split point, so the split size is at most the chunk size instead of the file size, and it does not depend on the file being evenly cut. The challenge's largest dataset is processed several times faster than the streaming path on a multi-core machine with identical encounter output.
+`options.chunkBytes` tunes the target size per chunk (8 MiB by default) and `options.maxWorkers` caps the worker count (`os.availableParallelism() - 1` by default). When both options are omitted, callers can tune the same knobs through the `SPACECOM_CHUNK_BYTES` and `SPACECOM_MAX_WORKERS` environment variables, declared and validated by [varlock](https://varlock.dev) in the repository's `.env.schema`; the defaults above apply when those variables are unset. Chunk boundaries are planned by scanning small windows around each split point, so the split size is at most the chunk size instead of the file size, and it does not depend on the file being evenly cut. The challenge's largest dataset is processed several times faster than the streaming path on a multi-core machine with identical encounter output.
 
 ## API example
 
@@ -67,9 +67,7 @@ import {
   readDatasetGroups,
 } from "@spacecom-encounter-analyzer/engine";
 
-for await (const candidate of detectEncounters(
-  readDatasetGroups("datasets/inputs/dataset1.txt")
-)) {
+for await (const candidate of detectEncounters(readDatasetGroups("datasets/inputs/dataset1.txt"))) {
   console.log(classifyEncounter(candidate));
 }
 ```

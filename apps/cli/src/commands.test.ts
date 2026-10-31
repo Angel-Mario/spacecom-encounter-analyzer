@@ -1,8 +1,9 @@
+import "varlock/auto-load";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { getDefaultOutputPath, listDatasetFiles, processDataset } from "./application.js";
 import { parseArguments } from "./commands.js";
@@ -20,6 +21,56 @@ describe("CLI arguments and processing", () => {
       outputDirectory: "results",
       unsortedStrategy: "external",
     });
+  });
+
+  it("uses environment variable defaults for directories and strategy when flags are omitted", async () => {
+    vi.resetModules();
+    vi.doMock("./env.js", () => ({
+      ENV: {
+        SPACECOM_INPUT_DIR: "custom/inputs",
+        SPACECOM_OUTPUT_DIR: "custom/outputs",
+        SPACECOM_UNSORTED_STRATEGY: "external",
+      },
+    }));
+    try {
+      const { parseArguments: parseWithEnvironment } = await import("./commands.js");
+      const options = parseWithEnvironment(["process-all"]);
+      expect(options.inputDirectory).toBe("custom/inputs");
+      expect(options.outputDirectory).toBe("custom/outputs");
+      expect(options.unsortedStrategy).toBe("external");
+    } finally {
+      vi.doUnmock("./env.js");
+      vi.resetModules();
+    }
+  });
+
+  it("prioritizes command-line arguments over environment variables", async () => {
+    vi.resetModules();
+    vi.doMock("./env.js", () => ({
+      ENV: {
+        SPACECOM_INPUT_DIR: "env/inputs",
+        SPACECOM_OUTPUT_DIR: "env/outputs",
+        SPACECOM_UNSORTED_STRATEGY: "external",
+      },
+    }));
+    try {
+      const { parseArguments: parseWithEnvironment } = await import("./commands.js");
+      const options = parseWithEnvironment([
+        "process-all",
+        "--input",
+        "cli/inputs",
+        "--output",
+        "cli/outputs",
+        "--unsorted",
+        "cancel",
+      ]);
+      expect(options.inputDirectory).toBe("cli/inputs");
+      expect(options.outputDirectory).toBe("cli/outputs");
+      expect(options.unsortedStrategy).toBe("cancel");
+    } finally {
+      vi.doUnmock("./env.js");
+      vi.resetModules();
+    }
   });
 
   it("rejects a process command without an input file", () => {

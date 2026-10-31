@@ -5,10 +5,7 @@ import { classifyEncounter } from "../../core/classifiers/encounter-classifier.j
 import { detectEncountersInGroup } from "../../core/detectors/encounter-detector.js";
 import { UnsortedTimestampsError } from "../../core/grouping/timestamp-grouper.js";
 import type { Encounter, MonitoredPerson, Timestamp } from "../../domain.js";
-import {
-  parseDatasetHeader,
-  parseDatasetRow,
-} from "../parsers/dataset-parser.js";
+import { parseDatasetHeader, parseDatasetRow } from "../parsers/dataset-parser.js";
 import { readLines } from "./dataset-line-reader.js";
 
 // Um timestamp despachado para o chunk seguinte pode continuar recebendo
@@ -135,8 +132,7 @@ const isCarryStep = (value: unknown): value is CarryStep => {
     Array.isArray(candidate.records) &&
     typeof candidate.lastLineNumber === "number" &&
     typeof candidate.lastRecordNumber === "number" &&
-    (candidate.lastTimestamp === null ||
-      typeof candidate.lastTimestamp === "string")
+    (candidate.lastTimestamp === null || typeof candidate.lastTimestamp === "string")
   );
 };
 
@@ -191,10 +187,7 @@ const receiveCarry = async (port: MessagePort): Promise<CarryOutcome> => {
   };
 };
 
-const buildErrorMessage = (
-  task: WorkerTaskData,
-  error: unknown
-): WorkerErrorMessage => {
+const buildErrorMessage = (task: WorkerTaskData, error: unknown): WorkerErrorMessage => {
   const message: WorkerErrorMessage = {
     chunkIndex: task.chunkIndex,
     message: error instanceof Error ? error.message : String(error),
@@ -244,13 +237,8 @@ const startTaskState = (task: WorkerTaskData): TaskState => ({
 
 const detectGroup = (state: TaskState, closed: GroupState): void => {
   state.timestampCount += 1;
-  const container = closed.isFirst
-    ? state.prefixEncounters
-    : state.normalEncounters;
-  for (const candidate of detectEncountersInGroup(
-    closed.timestamp,
-    closed.records
-  )) {
+  const container = closed.isFirst ? state.prefixEncounters : state.normalEncounters;
+  for (const candidate of detectEncountersInGroup(closed.timestamp, closed.records)) {
     container.push(classifyEncounter(candidate));
   }
 };
@@ -290,7 +278,7 @@ const crossCheck = (state: TaskState, message: CarryStep): void => {
     throw new UnsortedTimestampsError(
       carriedTimestamp,
       state.firstRecordTimestamp,
-      message.lastRecordNumber + 1
+      message.lastRecordNumber + 1,
     );
   }
 
@@ -299,9 +287,7 @@ const crossCheck = (state: TaskState, message: CarryStep): void => {
   // e aguarda o carry; está em deferredFirstGroup). Em ambos, os
   // registros carregados entram ANTES dos locais, como o serial agrupa.
   const continuingGroup =
-    state.group !== null && state.group.isFirst
-      ? state.group
-      : state.deferredFirstGroup;
+    state.group !== null && state.group.isFirst ? state.group : state.deferredFirstGroup;
   if (state.firstRecordTimestamp === carriedTimestamp) {
     if (
       message.records.length === 0 ||
@@ -310,9 +296,7 @@ const crossCheck = (state: TaskState, message: CarryStep): void => {
     ) {
       // Sem sequência a juntar = plano de chunk versus arquivo fora de
       // sincronia: é um defeito de wiring, não de dataset.
-      throw new Error(
-        "The carry relay does not line up with the first records of the next chunk"
-      );
+      throw new Error("The carry relay does not line up with the first records of the next chunk");
     }
 
     const merged: MonitoredPerson[] = [];
@@ -328,14 +312,14 @@ const crossCheck = (state: TaskState, message: CarryStep): void => {
 
   if (message.records.length > 0) {
     throw new Error(
-      "The previous chunk relayed records that do not share the timestamp of the next chunk's first record"
+      "The previous chunk relayed records that do not share the timestamp of the next chunk's first record",
     );
   }
 };
 
 const ensureCarry = async (
   state: TaskState,
-  carryPromise: Promise<CarryOutcome> | null
+  carryPromise: Promise<CarryOutcome> | null,
 ): Promise<CarryStep> => {
   if (state.carry !== null) {
     return state.carry;
@@ -378,7 +362,7 @@ const ensureCarry = async (
 const peekTimestamp = async (
   filePath: string,
   task: WorkerTaskData,
-  state: TaskState
+  state: TaskState,
 ): Promise<Timestamp | undefined> => {
   let peekIndex = 0;
   for await (const line of readLines(filePath, {
@@ -386,10 +370,7 @@ const peekTimestamp = async (
     start: task.end,
   })) {
     peekIndex += 1;
-    const row = parseDatasetRow(
-      line,
-      state.lineNumberOffset + state.lineIndex + 1 + peekIndex
-    );
+    const row = parseDatasetRow(line, state.lineNumberOffset + state.lineIndex + 1 + peekIndex);
     if (row !== undefined) {
       return row.timestamp;
     }
@@ -401,7 +382,7 @@ const peekTimestamp = async (
 const parseChunkLine = async (
   state: TaskState,
   carryPromise: Promise<CarryOutcome> | null,
-  line: string
+  line: string,
 ): Promise<MonitoredPerson | undefined> => {
   try {
     return parseDatasetRow(line, state.lineNumberOffset + state.lineIndex + 1);
@@ -424,7 +405,7 @@ const parseChunkLines = async (
   state: TaskState,
   filePath: string,
   task: WorkerTaskData,
-  carryPromise: Promise<CarryOutcome> | null
+  carryPromise: Promise<CarryOutcome> | null,
 ): Promise<void> => {
   for await (const line of readLines(filePath, {
     end: task.end,
@@ -445,17 +426,14 @@ const parseChunkLines = async (
 
     // Ordem crescente DENTRO do chunk, exatamente como no serial; a queda
     // de ordem na fronteira é verificada apenas quando o carry chega.
-    if (
-      state.previousTimestamp !== undefined &&
-      timestamp < state.previousTimestamp
-    ) {
+    if (state.previousTimestamp !== undefined && timestamp < state.previousTimestamp) {
       if (state.carry === null) {
         await ensureCarry(state, carryPromise);
       }
       throw new UnsortedTimestampsError(
         state.previousTimestamp,
         timestamp,
-        state.recordNumberOffset + state.recordCount
+        state.recordNumberOffset + state.recordCount,
       );
     }
 
@@ -517,7 +495,7 @@ const settleChunk = async (
   state: TaskState,
   filePath: string,
   task: WorkerTaskData,
-  carryPromise: Promise<CarryOutcome> | null
+  carryPromise: Promise<CarryOutcome> | null,
 ): Promise<CarryStep> => {
   const relayedCarry = await ensureCarry(state, carryPromise);
   if (task.start === 0 && state.lineIndex < 0) {
@@ -562,7 +540,7 @@ const settleChunk = async (
 const runWorkerTask = async (
   filePath: string,
   task: WorkerTaskData,
-  parent: MessagePort
+  parent: MessagePort,
 ): Promise<void> => {
   const carryIn = task.carryIn instanceof MessagePort ? task.carryIn : null;
   const carryOut = task.carryOut instanceof MessagePort ? task.carryOut : null;
@@ -622,9 +600,7 @@ const main = async (): Promise<void> => {
 
   for (const task of payload.tasks) {
     if (!isWorkerTask(task)) {
-      throw new TypeError(
-        "The parallel dataset worker received an invalid task"
-      );
+      throw new TypeError("The parallel dataset worker received an invalid task");
     }
     try {
       // Os chunks de um mesmo worker executam EM ORDEM: a corrente de carry

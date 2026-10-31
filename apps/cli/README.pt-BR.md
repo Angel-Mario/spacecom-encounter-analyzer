@@ -4,11 +4,7 @@
 
 [Read this README in English](README.md)
 
-A CLI é a interface de linha de comando do desafio de detecção de encontros do
-Programa Trainee Tech Spacecom 2027. Ela processa conjuntos de dados
-geográficos, detecta encontros entre indivíduos monitorados e grava um arquivo
-JSON por conjunto de dados. Também oferece um comando de benchmark que exibe
-métricas de processamento e memória sem gravar arquivos de saída.
+A CLI é a interface de linha de comando do desafio de detecção de encontros do Programa Trainee Tech Spacecom 2027. Ela processa conjuntos de dados geográficos, detecta encontros entre indivíduos monitorados e grava um arquivo JSON por conjunto de dados. Também oferece um comando de benchmark que exibe métricas de processamento e memória sem gravar arquivos de saída.
 
 ## Requisitos
 
@@ -24,10 +20,7 @@ Na raiz do repositório, processe um conjunto de dados:
 pnpm start -- process datasets/inputs/dataset1.txt
 ```
 
-Por padrão, o resultado é gravado em `datasets/outputs`. Um arquivo chamado
-`datasetN.txt` gera `respostasN.json`; outros nomes de entrada geram um arquivo
-JSON com o mesmo nome-base. Processe todos os arquivos `.txt` do diretório de
-entrada padrão:
+Por padrão, o resultado é gravado em `datasets/outputs`. Um arquivo chamado `datasetN.txt` gera `respostasN.json`; outros nomes de entrada geram um arquivo JSON com o mesmo nome-base. Processe todos os arquivos `.txt` do diretório de entrada padrão:
 
 ```bash
 pnpm start -- process-all
@@ -39,16 +32,13 @@ Especifique os diretórios de entrada e saída:
 pnpm start -- process-all --input ./datasets/inputs --output ./datasets/outputs
 ```
 
-Execute o benchmark de todos os arquivos no diretório de entrada sem gravar
-JSON:
+Execute o benchmark de todos os arquivos no diretório de entrada sem gravar JSON:
 
 ```bash
 pnpm start -- benchmark
 ```
 
-A saída do benchmark inclui registros e timestamps únicos processados,
-encontros por classificação, tempo de execução, uso de heap e memória
-residente (RSS).
+A saída do benchmark inclui registros e timestamps únicos processados, encontros por classificação, tempo de execução, uso de heap e memória residente (RSS).
 
 ![Comandos e opções disponíveis na CLI](../../docs/images/commands.png)
 
@@ -56,33 +46,19 @@ residente (RSS).
 
 ## Comportamento do desafio
 
-A CLI delega a leitura dos dados e a detecção de encontros ao motor. Somente
-registros com timestamps exatamente iguais são comparados. Um par é considerado
-um encontro apenas quando sua distância de Haversine é estritamente menor que
-20 metros, usando o raio terrestre de 6.371.000 metros. Os resultados são
-classificados como `protetiva`, `faccao` ou `generico`; medidas protetivas têm
-prioridade sobre uma facção compartilhada.
+A CLI delega a leitura dos dados e a detecção de encontros ao motor. Somente registros com timestamps exatamente iguais são comparados. Um par é considerado um encontro apenas quando sua distância de Haversine é estritamente menor que 20 metros, usando o raio terrestre de 6.371.000 metros. Os resultados são classificados como `protetiva`, `faccao` ou `generico`; medidas protetivas têm prioridade sobre uma facção compartilhada.
 
 A distância é calculada pela fórmula de Haversine:
 
 ![Fórmula da distância de Haversine](../../docs/images/haversine-formula.svg)
 
-Para estudar a fórmula e a distância esférica, consulte a
-[referência sobre a fórmula de Haversine](https://www.movable-type.co.uk/scripts/latlong.html).
-Para conhecer as APIs oficiais do ambiente usadas pela CLI, consulte a
-documentação do Node.js sobre [streams](https://nodejs.org/api/stream.html) e
-[sistema de arquivos](https://nodejs.org/api/fs.html).
+Para estudar a fórmula e a distância esférica, consulte a [referência sobre a fórmula de Haversine](https://www.movable-type.co.uk/scripts/latlong.html). Para conhecer as APIs oficiais do ambiente usadas pela CLI, consulte a documentação do Node.js sobre [streams](https://nodejs.org/api/stream.html) e [sistema de arquivos](https://nodejs.org/api/fs.html).
 
-Cada arquivo de saída é um array JSON. Cada encontro contém `tipo`,
-`monitoradosEncontro`, `timestamp`, `posicoes` e `distanciaMetros`, conforme o
-formato exigido pelo desafio. As coordenadas originais são mantidas em
-`posicoes`.
+Cada arquivo de saída é um array JSON. Cada encontro contém `tipo`, `monitoradosEncontro`, `timestamp`, `posicoes` e `distanciaMetros`, conforme o formato exigido pelo desafio. As coordenadas originais são mantidas em `posicoes`.
 
 ## Timestamps fora de ordem
 
-O processamento padrão espera timestamps em ordem crescente. Se encontrar uma
-ordem inválida, a CLI pergunta se deve tentar novamente com ordenação externa
-em disco. Escolha explicitamente uma estratégia para evitar a pergunta:
+O processamento padrão espera timestamps em ordem crescente. Se encontrar uma ordem inválida, a CLI pergunta se deve tentar novamente com ordenação externa em disco. Escolha explicitamente uma estratégia para evitar a pergunta:
 
 ```bash
 pnpm start -- process datasets/inputs/dataset1.txt --unsorted external
@@ -90,19 +66,36 @@ pnpm start -- process-all --unsorted cancel
 pnpm start -- benchmark --input ./datasets/inputs --unsorted external
 ```
 
-`--unsorted` aceita `prompt` (padrão), `external` ou `cancel`. Em um terminal
-não interativo, use `external` ou `cancel`.
+`--unsorted` aceita `prompt` (padrão), `external` ou `cancel`. Em um terminal não interativo, use `external` ou `cancel`.
+
+## Variáveis de ambiente
+
+Os valores compartilhados por todos os comandos são declarados no `.env.schema` na raiz do repositório e gerenciados com o [varlock](https://varlock.dev), que resolve e valida as variáveis antes da CLI arrancar (`dev` e `start` executam os comandos dentro de `varlock run`, de modo que `pnpm start` e `pnpm dev` sempre rodam com um ambiente validado; um `node dist/index.mjs` direto usa os padrões embutidos no código).
+
+Para personalizar, copie `.env.example` para um arquivo `.env` (ignorado pelo Git) ao lado do `.env.schema` ou exporte as variáveis no shell. Opções explícitas da CLI sempre têm precedência sobre os valores do ambiente:
+
+| Variável                     | Padrão                          | Usada por                                                                                   |
+| ---------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------- |
+| `SPACECOM_INPUT_DIR`         | `datasets/inputs`               | Diretório de entrada padrão de `process-all` e `benchmark`.                                 |
+| `SPACECOM_OUTPUT_DIR`        | `datasets/outputs`              | Diretório de saída padrão de `process` e `process-all`.                                     |
+| `SPACECOM_UNSORTED_STRATEGY` | `prompt`                        | Padrão de `--unsorted` quando a flag está ausente; aceita `prompt`, `external` ou `cancel`. |
+| `SPACECOM_CHUNK_BYTES`       | `8388608` (8 MiB)               | Tamanho-alvo, em bytes, de cada faixa entregue a um worker paralelo do motor.               |
+| `SPACECOM_MAX_WORKERS`       | `os.availableParallelism() - 1` | Número máximo de threads de worker paralelas por dataset.                                   |
+
+`SPACECOM_CHUNK_BYTES` e `SPACECOM_MAX_WORKERS` ajustam o processamento paralelo do motor e são ignoradas quando o chamador passa opções explícitas (veja o [README do motor](../../packages/engine/README.md)). Valores inválidos são rejeitados pelo varlock antes do processo iniciar.
 
 ## Opções e padrões
 
-| Opção | Comandos | Padrão | Descrição |
-| --- | --- | --- | --- |
-| `--input <diretório>` | `process-all`, `benchmark` | `datasets/inputs` | Diretório com os conjuntos de dados `.txt`. |
-| `--output <diretório>` | `process`, `process-all` | `datasets/outputs` | Diretório para os arquivos JSON de encontros. |
-| `--unsorted <estratégia>` | Todos os comandos de processamento | `prompt` | Ação para timestamps fora de ordem: `prompt`, `external` ou `cancel`. |
-| `--help` | Qualquer | — | Exibe a ajuda dos comandos. |
+| Opção                     | Comandos                           | Padrão             | Descrição                                                             |
+| ------------------------- | ---------------------------------- | ------------------ | --------------------------------------------------------------------- |
+| `--input <diretório>`     | `process-all`, `benchmark`         | `datasets/inputs`  | Diretório com os conjuntos de dados `.txt`.                           |
+| `--output <diretório>`    | `process`, `process-all`           | `datasets/outputs` | Diretório para os arquivos JSON de encontros.                         |
+| `--unsorted <estratégia>` | Todos os comandos de processamento | `prompt`           | Ação para timestamps fora de ordem: `prompt`, `external` ou `cancel`. |
+| `--help`                  | Qualquer                           | —                  | Exibe a ajuda dos comandos.                                           |
 
 O comando `benchmark` não aceita `--output`, pois não grava arquivos.
+
+Os padrões desta tabela mudam quando as variáveis de ambiente correspondentes estão definidas; veja [Variáveis de ambiente](#variáveis-de-ambiente).
 
 ## Desenvolvimento
 
@@ -124,15 +117,13 @@ Execute a CLI compilada:
 pnpm --filter @spacecom-encounter-analyzer/cli start
 ```
 
-Execute diretamente o observador de desenvolvimento do pacote, a partir deste
-diretório:
+Execute diretamente o observador de desenvolvimento do pacote, a partir deste diretório:
 
 ```bash
 pnpm dev
 ```
 
-O observador direto exige que o pacote do motor já tenha sido compilado. Para
-verificar os tipos:
+O observador direto exige que o pacote do motor já tenha sido compilado. Para verificar os tipos:
 
 ```bash
 pnpm check-types

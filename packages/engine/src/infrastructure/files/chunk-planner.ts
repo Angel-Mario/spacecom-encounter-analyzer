@@ -13,10 +13,7 @@ export interface DatasetChunk {
 // Escaneia uma pequena janela em vez do arquivo inteiro: o corte é a
 // primeira quebra de linha em ou após a posição alvo, seguida do byte
 // seguinte (um começo de linha).
-const findLineBoundary = async (
-  filePath: string,
-  target: number
-): Promise<number | undefined> => {
+const findLineBoundary = async (filePath: string, target: number): Promise<number | undefined> => {
   const input = createReadStream(filePath, {
     highWaterMark: BOUNDARY_WINDOW_BYTES,
     start: target,
@@ -28,13 +25,8 @@ const findLineBoundary = async (
     let windows = 0;
 
     for await (const chunk of input) {
-      const bufferChunk = Buffer.isBuffer(chunk)
-        ? chunk
-        : Buffer.from(chunk as string);
-      pending =
-        pending.length === 0
-          ? bufferChunk
-          : Buffer.concat([pending, bufferChunk]);
+      const bufferChunk = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as string);
+      pending = pending.length === 0 ? bufferChunk : Buffer.concat([pending, bufferChunk]);
 
       const newlineIndex = pending.indexOf(NEWLINE_BYTE);
       if (newlineIndex !== -1) {
@@ -63,7 +55,7 @@ const findLineBoundary = async (
 // onde o anterior parou.
 export const planDatasetChunks = async (
   filePath: string,
-  chunkCount: number
+  chunkCount: number,
 ): Promise<DatasetChunk[]> => {
   const { size } = await stat(filePath);
 
@@ -75,9 +67,7 @@ export const planDatasetChunks = async (
   // As varreduras de corte leem janelas distintas do arquivo, então
   // executam em paralelo; a montagem crescente abaixo mantém a semântica
   // sequencial de descarte.
-  const boundaries = await Promise.all(
-    targets.map((target) => findLineBoundary(filePath, target))
-  );
+  const boundaries = await Promise.all(targets.map((target) => findLineBoundary(filePath, target)));
 
   const chunks: DatasetChunk[] = [];
   let start = 0;

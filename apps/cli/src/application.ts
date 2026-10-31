@@ -11,11 +11,7 @@ import {
   UnsortedTimestampsError,
   writeJsonOutput,
 } from "@spacecom-encounter-analyzer/engine";
-import type {
-  Encounter,
-  MonitoredPerson,
-  Timestamp,
-} from "@spacecom-encounter-analyzer/engine";
+import type { Encounter, MonitoredPerson, Timestamp } from "@spacecom-encounter-analyzer/engine";
 
 export type UnsortedStrategy = "prompt" | "external" | "cancel";
 
@@ -45,7 +41,7 @@ interface ProcessingResult {
 }
 
 const collectResults = async (
-  groups: AsyncIterable<readonly [Timestamp, readonly MonitoredPerson[]]>
+  groups: AsyncIterable<readonly [Timestamp, readonly MonitoredPerson[]]>,
 ): Promise<ProcessingResult> => {
   const result: ProcessingResult = {
     encounters: [],
@@ -69,7 +65,7 @@ const collectResults = async (
 const defaultPrompt = async (message: string): Promise<boolean> => {
   if (!process.stdin.isTTY) {
     throw new Error(
-      "The dataset has unordered timestamps. Use --unsorted external to enable disk-backed sorting."
+      "The dataset has unordered timestamps. Use --unsorted external to enable disk-backed sorting.",
     );
   }
 
@@ -79,10 +75,7 @@ const defaultPrompt = async (message: string): Promise<boolean> => {
   });
   try {
     const answer = await terminal.question(`${message} [y/N] `);
-    return (
-      answer.trim().toLowerCase() === "y" ||
-      answer.trim().toLowerCase() === "yes"
-    );
+    return answer.trim().toLowerCase() === "y" || answer.trim().toLowerCase() === "yes";
   } finally {
     terminal.close();
   }
@@ -91,7 +84,7 @@ const defaultPrompt = async (message: string): Promise<boolean> => {
 const collectWithFallback = async (
   datasetPath: string,
   strategy: UnsortedStrategy,
-  prompt: (message: string) => Promise<boolean>
+  prompt: (message: string) => Promise<boolean>,
 ): Promise<ProcessingResult> => {
   if (strategy === "external") {
     return collectResults(readDatasetGroupsWithExternalSort(datasetPath));
@@ -110,20 +103,17 @@ const collectWithFallback = async (
     if (strategy === "cancel") {
       throw new Error(
         `Dataset timestamps are out of order at record ${error.recordNumber}; processing cancelled.`,
-        { cause: error }
+        { cause: error },
       );
     }
 
     const shouldContinue = await prompt(
-      `Timestamps are out of order at record ${error.recordNumber}. Retry using disk-backed external sorting?`
+      `Timestamps are out of order at record ${error.recordNumber}. Retry using disk-backed external sorting?`,
     );
     if (!shouldContinue) {
-      throw new Error(
-        "Processing cancelled because timestamps are out of order.",
-        {
-          cause: error,
-        }
-      );
+      throw new Error("Processing cancelled because timestamps are out of order.", {
+        cause: error,
+      });
     }
 
     // Reabre o arquivo e descarta qualquer resultado parcial da tentativa em streaming.
@@ -133,15 +123,11 @@ const collectWithFallback = async (
 
 export const processDataset = async (
   datasetPath: string,
-  options: ProcessOptions
+  options: ProcessOptions,
 ): Promise<DatasetSummary> => {
   const start = performance.now();
   const prompt = options.prompt ?? defaultPrompt;
-  const result = await collectWithFallback(
-    datasetPath,
-    options.unsortedStrategy,
-    prompt
-  );
+  const result = await collectWithFallback(datasetPath, options.unsortedStrategy, prompt);
 
   if (options.outputPath) {
     await writeJsonOutput(options.outputPath, result.encounters);
@@ -165,16 +151,12 @@ export const processDataset = async (
   return summary;
 };
 
-export const listDatasetFiles = async (
-  inputDirectory: string
-): Promise<string[]> => {
+export const listDatasetFiles = async (inputDirectory: string): Promise<string[]> => {
   const directoryEntries = await readdir(inputDirectory, {
     withFileTypes: true,
   });
   const files = directoryEntries
-    .filter(
-      (entry) => entry.isFile() && entry.name.toLowerCase().endsWith(".txt")
-    )
+    .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith(".txt"))
     .map((entry) => path.join(inputDirectory, entry.name))
     .toSorted((first, second) => first.localeCompare(second));
 
@@ -188,30 +170,18 @@ export const listDatasetFiles = async (
 export const resolveWorkspacePath = (filePath: string): string =>
   path.isAbsolute(filePath) ? filePath : path.resolve(WORKSPACE_ROOT, filePath);
 
-export const getDefaultOutputPath = (
-  datasetPath: string,
-  outputDirectory: string
-): string => {
+export const getDefaultOutputPath = (datasetPath: string, outputDirectory: string): string => {
   const datasetName = path.basename(datasetPath, path.extname(datasetPath));
-  const datasetNumber = /^dataset(?<number>\d+)$/iu.exec(datasetName)?.groups
-    ?.number;
-  const outputName = datasetNumber
-    ? `respostas${datasetNumber}.json`
-    : `${datasetName}.json`;
+  const datasetNumber = /^dataset(?<number>\d+)$/iu.exec(datasetName)?.groups?.number;
+  const outputName = datasetNumber ? `respostas${datasetNumber}.json` : `${datasetName}.json`;
   return path.join(outputDirectory, outputName);
 };
 
 export const formatDatasetSummary = (summary: DatasetSummary): string => {
   const counts = {
-    faccao: summary.encounters.filter(
-      (encounter) => encounter.tipo === "faccao"
-    ).length,
-    generico: summary.encounters.filter(
-      (encounter) => encounter.tipo === "generico"
-    ).length,
-    protetiva: summary.encounters.filter(
-      (encounter) => encounter.tipo === "protetiva"
-    ).length,
+    faccao: summary.encounters.filter((encounter) => encounter.tipo === "faccao").length,
+    generico: summary.encounters.filter((encounter) => encounter.tipo === "generico").length,
+    protetiva: summary.encounters.filter((encounter) => encounter.tipo === "protetiva").length,
   };
   const number = new Intl.NumberFormat("en-US");
   const lines = [

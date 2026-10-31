@@ -12,11 +12,12 @@
   "scripts": {
     "build": "tsdown",
     "check-types": "tsc --noEmit",
-    "dev": "tsx watch src/index.ts",
-    "start": "node dist/index.mjs"
+    "dev": "varlock run -- tsx watch src/index.ts",
+    "start": "varlock run -- node dist/index.mjs"
   },
   "dependencies": {
-    "@spacecom-encounter-analyzer/engine": "workspace:*"
+    "@spacecom-encounter-analyzer/engine": "workspace:*",
+    "varlock": "catalog:"
   },
   "devDependencies": {
     "@spacecom-encounter-analyzer/config": "workspace:*",

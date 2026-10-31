@@ -1,20 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import type { EncounterCandidate, MonitoredPerson } from "../../domain.js";
-import {
-  calculateDistanceMeters,
-  EARTH_RADIUS_METERS,
-} from "../algorithms/haversine.js";
-import {
-  detectEncounters,
-  MAX_ENCOUNTER_DISTANCE_METERS,
-} from "./encounter-detector.js";
+import { calculateDistanceMeters, EARTH_RADIUS_METERS } from "../algorithms/haversine.js";
+import { detectEncounters, MAX_ENCOUNTER_DISTANCE_METERS } from "./encounter-detector.js";
 
 const createPerson = (
   id: number,
   timestamp: string,
   latitude: number,
-  longitude: number
+  longitude: number,
 ): MonitoredPerson => ({
   factionId: null,
   hasProtectiveMeasure: false,
@@ -26,7 +20,7 @@ const createPerson = (
 });
 
 const collectEncounters = async (
-  groups: Iterable<readonly [string, readonly MonitoredPerson[]]>
+  groups: Iterable<readonly [string, readonly MonitoredPerson[]]>,
 ): Promise<EncounterCandidate[]> => {
   const encounters: EncounterCandidate[] = [];
 
@@ -39,7 +33,7 @@ const collectEncounters = async (
 
 const collectEncountersWithoutIndex = (
   timestamp: string,
-  people: readonly MonitoredPerson[]
+  people: readonly MonitoredPerson[],
 ): EncounterCandidate[] => {
   const encounters: EncounterCandidate[] = [];
   const detectedPairs = new Set<string>();
@@ -50,27 +44,20 @@ const collectEncountersWithoutIndex = (
       continue;
     }
 
-    for (
-      let secondIndex = firstIndex + 1;
-      secondIndex < people.length;
-      secondIndex += 1
-    ) {
+    for (let secondIndex = firstIndex + 1; secondIndex < people.length; secondIndex += 1) {
       const second = people[secondIndex];
       if (!second || first.id === second.id) {
         continue;
       }
 
-      const key =
-        first.id < second.id
-          ? `${first.id}:${second.id}`
-          : `${second.id}:${first.id}`;
+      const key = first.id < second.id ? `${first.id}:${second.id}` : `${second.id}:${first.id}`;
       if (detectedPairs.has(key)) {
         continue;
       }
 
       const distanciaMetros = calculateDistanceMeters(
         { lat: first.latitude, lon: first.longitude },
-        { lat: second.latitude, lon: second.longitude }
+        { lat: second.latitude, lon: second.longitude },
       );
       if (distanciaMetros < MAX_ENCOUNTER_DISTANCE_METERS) {
         detectedPairs.add(key);
@@ -91,9 +78,7 @@ describe("detectEncounters", () => {
     const first = createPerson(4, "2026-10-30 18:00:00", -10.07996, -37.08384);
     const second = createPerson(6, "2026-10-30 18:00:00", -10.07987, -37.08389);
 
-    const encounters = await collectEncounters([
-      [first.timestamp, [first, second]],
-    ]);
+    const encounters = await collectEncounters([[first.timestamp, [first, second]]]);
 
     expect(encounters).toEqual([
       {
@@ -110,15 +95,15 @@ describe("detectEncounters", () => {
       2,
       first.timestamp,
       0,
-      (MAX_ENCOUNTER_DISTANCE_METERS / EARTH_RADIUS_METERS) * (180 / Math.PI)
+      (MAX_ENCOUNTER_DISTANCE_METERS / EARTH_RADIUS_METERS) * (180 / Math.PI),
     );
     const fartherAway = createPerson(3, first.timestamp, 0, -0.0002);
 
     expect(
       calculateDistanceMeters(
         { lat: first.latitude, lon: first.longitude },
-        { lat: exactlyAtLimit.latitude, lon: exactlyAtLimit.longitude }
-      )
+        { lat: exactlyAtLimit.latitude, lon: exactlyAtLimit.longitude },
+      ),
     ).toBeCloseTo(MAX_ENCOUNTER_DISTANCE_METERS, 10);
 
     const encounters = await collectEncounters([
@@ -130,12 +115,7 @@ describe("detectEncounters", () => {
 
   it("examines each pair once and does not report duplicate monitored IDs", async () => {
     const firstPosition = createPerson(1, "2026-10-30 18:00:00", 0, 0);
-    const duplicatePosition = createPerson(
-      1,
-      firstPosition.timestamp,
-      0,
-      0.00001
-    );
+    const duplicatePosition = createPerson(1, firstPosition.timestamp, 0, 0.00001);
     const other = createPerson(2, firstPosition.timestamp, 0, 0.00002);
 
     const encounters = await collectEncounters([
@@ -162,19 +142,15 @@ describe("detectEncounters", () => {
     const first = createPerson(1, "2026-10-30 18:00:00", 0, 0);
     const second = createPerson(2, "2026-10-30 18:00:05", 0, 0);
 
-    await expect(
-      collectEncounters([[first.timestamp, [first, second]]])
-    ).rejects.toThrow(
-      'Timestamp group "2026-10-30 18:00:00" contains a record from "2026-10-30 18:00:05"'
+    await expect(collectEncounters([[first.timestamp, [first, second]]])).rejects.toThrow(
+      'Timestamp group "2026-10-30 18:00:00" contains a record from "2026-10-30 18:00:05"',
     );
   });
 
   it("returns no encounters when a timestamp has fewer than two records", async () => {
     const person = createPerson(1, "2026-10-30 18:00:00", 0, 0);
 
-    await expect(
-      collectEncounters([[person.timestamp, [person]]])
-    ).resolves.toEqual([]);
+    await expect(collectEncounters([[person.timestamp, [person]]])).resolves.toEqual([]);
   });
 
   it("matches exhaustive detection for nearby points across global coordinates", async () => {
@@ -193,7 +169,7 @@ describe("detectEncounters", () => {
     ];
 
     await expect(collectEncounters([[timestamp, people]])).resolves.toEqual(
-      collectEncountersWithoutIndex(timestamp, people)
+      collectEncountersWithoutIndex(timestamp, people),
     );
   });
 });

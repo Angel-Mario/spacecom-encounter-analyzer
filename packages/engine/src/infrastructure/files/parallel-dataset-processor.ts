@@ -8,6 +8,7 @@ import { classifyEncounter } from "../../core/classifiers/encounter-classifier.j
 import { detectEncountersInGroup } from "../../core/detectors/encounter-detector.js";
 import { UnsortedTimestampsError } from "../../core/grouping/timestamp-grouper.js";
 import type { Encounter } from "../../domain.js";
+import { ENV } from "../../env.js";
 import type { DatasetChunk } from "./chunk-planner.js";
 import { planDatasetChunks } from "./chunk-planner.js";
 import { readDatasetGroups } from "./file-dataset-reader.js";
@@ -107,22 +108,17 @@ const resolveWorkerUrl = (): URL => {
 
   // Execuções a partir do código-fonte (vitest) caem na entrada compilada
   // do pacote engine.
-  const builtUrl = new URL(
-    "../../../dist/parallel-dataset-worker.mjs",
-    import.meta.url
-  );
+  const builtUrl = new URL("../../../dist/parallel-dataset-worker.mjs", import.meta.url);
   if (existsSync(builtUrl)) {
     return builtUrl;
   }
 
   throw new Error(
-    "The parallel dataset worker entry is missing; build the engine package once (pnpm --filter @spacecom-encounter-analyzer/engine build) to spawn worker threads"
+    "The parallel dataset worker entry is missing; build the engine package once (pnpm --filter @spacecom-encounter-analyzer/engine build) to spawn worker threads",
   );
 };
 
-const analyzeDatasetSerial = async (
-  filePath: string
-): Promise<ParallelDatasetAnalysis> => {
+const analyzeDatasetSerial = async (filePath: string): Promise<ParallelDatasetAnalysis> => {
   const analysis: ParallelDatasetAnalysis = {
     encounters: [],
     records: 0,
@@ -142,7 +138,7 @@ const analyzeDatasetSerial = async (
 
 const rejectUnfinishedChunks = (
   futures: Map<number, PromiseWithResolvers<ChunkOutput>>,
-  error: Error
+  error: Error,
 ): void => {
   for (const future of futures.values()) {
     future.reject(error);
@@ -151,7 +147,7 @@ const rejectUnfinishedChunks = (
 
 const rejectWithErrorMessage = (
   futures: Map<number, PromiseWithResolvers<ChunkOutput>>,
-  message: WorkerErrorMessage
+  message: WorkerErrorMessage,
 ): void => {
   const future = futures.get(message.chunkIndex);
   if (future === undefined) {
@@ -166,20 +162,13 @@ const rejectWithErrorMessage = (
   // estruturada; aqui ele volta ao tipo original para que o chamador
   // (fallback de ordenação externa na CLI, por exemplo) trate-o por
   // instanceof exatamente como no caminho serial.
-  const { currentTimestamp, previousTimestamp, recordNumber } =
-    message.unsorted;
-  future.reject(
-    new UnsortedTimestampsError(
-      previousTimestamp,
-      currentTimestamp,
-      recordNumber
-    )
-  );
+  const { currentTimestamp, previousTimestamp, recordNumber } = message.unsorted;
+  future.reject(new UnsortedTimestampsError(previousTimestamp, currentTimestamp, recordNumber));
 };
 
 const handleWorkerMessage = (
   message: unknown,
-  futures: Map<number, PromiseWithResolvers<ChunkOutput>>
+  futures: Map<number, PromiseWithResolvers<ChunkOutput>>,
 ): void => {
   if (isWorkerErrorMessage(message)) {
     rejectWithErrorMessage(futures, message);
@@ -202,18 +191,18 @@ const handleWorkerMessage = (
 
 const handleWorkerError = (
   error: unknown,
-  futures: Map<number, PromiseWithResolvers<ChunkOutput>>
+  futures: Map<number, PromiseWithResolvers<ChunkOutput>>,
 ): void => {
   const description = error instanceof Error ? error.message : String(error);
   rejectUnfinishedChunks(
     futures,
-    new Error(`A parallel dataset worker thread crashed: ${description}`)
+    new Error(`A parallel dataset worker thread crashed: ${description}`),
   );
 };
 
 const handleWorkerExit = (
   exitCode: number,
-  futures: Map<number, PromiseWithResolvers<ChunkOutput>>
+  futures: Map<number, PromiseWithResolvers<ChunkOutput>>,
 ): void => {
   if (exitCode === 0) {
     return;
@@ -221,8 +210,8 @@ const handleWorkerExit = (
   rejectUnfinishedChunks(
     futures,
     new Error(
-      `A parallel dataset worker thread exited with code ${exitCode} before settling every chunk`
-    )
+      `A parallel dataset worker thread exited with code ${exitCode} before settling every chunk`,
+    ),
   );
 };
 
@@ -230,7 +219,7 @@ const handleWorkerExit = (
 // chunk é a que o caminho serial teria lançado antes, então é ela que vence.
 const collectChunkOutputs = async (
   futures: Map<number, PromiseWithResolvers<ChunkOutput>>,
-  chunkCount: number
+  chunkCount: number,
 ): Promise<ChunkOutput[]> => {
   const promises: Promise<ChunkOutput>[] = [];
   for (let chunkIndex = 0; chunkIndex < chunkCount; chunkIndex += 1) {
@@ -278,10 +267,7 @@ const buildAnalysis = (outputs: ChunkOutput[]): ParallelDatasetAnalysis => {
 // Atribuição round-robin mantém a fila de cada worker ordenada pelo índice
 // do chunk; o relay de carry só flui entre chunks adjacentes, de modo que
 // os grupos de fronteira permanecem fundidos.
-const buildTaskWiring = (
-  chunks: DatasetChunk[],
-  workerCount: number
-): WorkerWiring[] => {
+const buildTaskWiring = (chunks: DatasetChunk[], workerCount: number): WorkerWiring[] => {
   const wirings: WorkerWiring[] = [];
   for (let workerIndex = 0; workerIndex < workerCount; workerIndex += 1) {
     wirings.push({ tasks: [], transfers: [] });
@@ -329,7 +315,7 @@ const openWorkers = (
   filePath: string,
   workerUrl: URL,
   wirings: WorkerWiring[],
-  futures: Map<number, PromiseWithResolvers<ChunkOutput>>
+  futures: Map<number, PromiseWithResolvers<ChunkOutput>>,
 ): Worker[] => {
   const workers: Worker[] = [];
   for (const wiring of wirings) {
@@ -360,12 +346,12 @@ const openWorkers = (
 
 export const analyzeDatasetParallel = async (
   filePath: string,
-  options?: ParallelDatasetOptions
+  options?: ParallelDatasetOptions,
 ): Promise<ParallelDatasetAnalysis> => {
-  const chunkBytes = options?.chunkBytes ?? DEFAULT_CHUNK_BYTES;
+  const chunkBytes = options?.chunkBytes ?? ENV.SPACECOM_CHUNK_BYTES ?? DEFAULT_CHUNK_BYTES;
   const maxWorkers = Math.max(
     1,
-    options?.maxWorkers ?? os.availableParallelism() - 1
+    options?.maxWorkers ?? ENV.SPACECOM_MAX_WORKERS ?? os.availableParallelism() - 1,
   );
   const { size } = await stat(filePath);
   if (size < chunkBytes * 2) {
@@ -378,10 +364,7 @@ export const analyzeDatasetParallel = async (
   // O alvo de chunks limita cada fatia a chunkBytes e não passa de
   // maxWorkers workers: mais threads que núcleos não aceleram leitura
   // CPU-bound e cada thread carrega um custo de abertura fixo.
-  const chunkCountTarget = Math.max(
-    2,
-    Math.min(Math.floor(size / chunkBytes), maxWorkers)
-  );
+  const chunkCountTarget = Math.max(2, Math.min(Math.floor(size / chunkBytes), maxWorkers));
   const chunks = await planDatasetChunks(filePath, chunkCountTarget);
   const chunkCount = chunks.length;
   const workerCount = Math.min(chunkCount, maxWorkers);

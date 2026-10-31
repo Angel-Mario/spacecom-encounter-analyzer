@@ -5,8 +5,7 @@ export default defineConfig({
   dts: true,
   entry: {
     index: "./src/index.ts",
-    "parallel-dataset-worker":
-      "./src/infrastructure/files/parallel-dataset-worker.ts",
+    "parallel-dataset-worker": "./src/infrastructure/files/parallel-dataset-worker.ts",
   },
   format: "esm",
   outDir: "./dist",

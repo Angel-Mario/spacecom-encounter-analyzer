@@ -1,3 +1,5 @@
+import "varlock/auto-load";
+
 import packageJson from "../package.json" with { type: "json" };
 import { runCommand } from "./commands.js";
 
@@ -8,9 +10,7 @@ const main = async (): Promise<void> => {
   }
 
   if (args.length === 0) {
-    process.stdout.write(
-      `Spacecom Encounter Analyzer CLI v${packageJson.version}\n\n`
-    );
+    process.stdout.write(`Spacecom Encounter Analyzer CLI v${packageJson.version}\n\n`);
     await runCommand(["--help"]);
     return;
   }

@@ -1,10 +1,7 @@
 [
   {
     "distanciaMetros": 10.81640474094182,
-    "monitoradosEncontro": [
-      10,
-      11
-    ],
+    "monitoradosEncontro": [10, 11],
     "posicoes": {
       "10": {
         "lat": -14.62732,
@@ -20,10 +17,7 @@
   },
   {
     "distanciaMetros": 8.90961951633724,
-    "monitoradosEncontro": [
-      12,
-      13
-    ],
+    "monitoradosEncontro": [12, 13],
     "posicoes": {
       "12": {
         "lat": -7.33193,
@@ -39,10 +33,7 @@
   },
   {
     "distanciaMetros": 10.205209934010645,
-    "monitoradosEncontro": [
-      3,
-      19
-    ],
+    "monitoradosEncontro": [3, 19],
     "posicoes": {
       "3": {
         "lat": -25.99892,
@@ -58,10 +49,7 @@
   },
   {
     "distanciaMetros": 9.349741643529189,
-    "monitoradosEncontro": [
-      6,
-      7
-    ],
+    "monitoradosEncontro": [6, 7],
     "posicoes": {
       "6": {
         "lat": -15.03744,
@@ -77,10 +65,7 @@
   },
   {
     "distanciaMetros": 8.811738897421028,
-    "monitoradosEncontro": [
-      4,
-      5
-    ],
+    "monitoradosEncontro": [4, 5],
     "posicoes": {
       "4": {
         "lat": -29.13547,
@@ -96,10 +81,7 @@
   },
   {
     "distanciaMetros": 8.892813491126276,
-    "monitoradosEncontro": [
-      8,
-      9
-    ],
+    "monitoradosEncontro": [8, 9],
     "posicoes": {
       "8": {
         "lat": -14.77075,

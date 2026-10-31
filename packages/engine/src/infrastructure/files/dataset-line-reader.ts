@@ -18,7 +18,7 @@ export interface LineRange {
 // cujo início fique estritamente antes de `end`.
 export const readLines = async function* readLines(
   filePath: string,
-  range: LineRange = {}
+  range: LineRange = {},
 ): AsyncGenerator<string> {
   const input = createReadStream(filePath, {
     end: range.end === undefined ? undefined : range.end - 1,
@@ -30,13 +30,8 @@ export const readLines = async function* readLines(
     let pending: Buffer<ArrayBufferLike> = Buffer.alloc(0);
 
     for await (const chunk of input) {
-      const bufferChunk = Buffer.isBuffer(chunk)
-        ? chunk
-        : Buffer.from(chunk as string);
-      pending =
-        pending.length === 0
-          ? bufferChunk
-          : Buffer.concat([pending, bufferChunk]);
+      const bufferChunk = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as string);
+      pending = pending.length === 0 ? bufferChunk : Buffer.concat([pending, bufferChunk]);
 
       let newlineIndex = pending.indexOf(NEWLINE_BYTE);
       while (newlineIndex >= 0) {

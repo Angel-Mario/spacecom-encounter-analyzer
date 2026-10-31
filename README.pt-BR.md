@@ -2,21 +2,15 @@
 
 [Read this README in English](README.md)
 
-O Spacecom Encounter Analyzer é uma solução em Node.js/TypeScript para o desafio
-de detecção de encontros do Programa Trainee Tech Spacecom 2027. A aplicação
-analisa conjuntos de dados geográficos e detecta encontros entre indivíduos
-monitorados. O repositório é um monorepo pnpm que contém a CLI e seu motor de
-análise de encontros.
+O Spacecom Encounter Analyzer é uma solução em Node.js/TypeScript para o desafio de detecção de encontros do Programa Trainee Tech Spacecom 2027. A aplicação analisa conjuntos de dados geográficos e detecta encontros entre indivíduos monitorados. O repositório é um monorepo pnpm que contém a CLI e seu motor de análise de encontros.
 
 ## Capturas de tela
 
-A CLI oferece comandos para processar conjuntos de dados e medir o tempo de
-execução e o uso de memória:
+A CLI oferece comandos para processar conjuntos de dados e medir o tempo de execução e o uso de memória:
 
 ![Comandos e opções disponíveis na CLI](docs/images/commands.png)
 
-O comando de benchmark exibe um resumo de cada conjunto de dados sem gravar
-arquivos JSON:
+O comando de benchmark exibe um resumo de cada conjunto de dados sem gravar arquivos JSON:
 
 ![Exemplo da saída do benchmark](docs/images/benchmark.png)
 
@@ -30,66 +24,42 @@ packages/
   engine/    Motor reutilizável, tipos de domínio e infraestrutura de dados
 ```
 
-Para detalhes específicos de cada componente, consulte o
-[README da CLI em português](apps/cli/README.pt-BR.md) e o
-[README do motor em português](packages/engine/README.pt-BR.md).
+Para detalhes específicos de cada componente, consulte o [README da CLI em português](apps/cli/README.pt-BR.md) e o [README do motor em português](packages/engine/README.pt-BR.md).
 
 ## Regras do desafio e solução
 
-A solução segue os requisitos do desafio para a tecnologia, o formato dos
-dados, o resultado dos encontros e as regras de distância:
+A solução segue os requisitos do desafio para a tecnologia, o formato dos dados, o resultado dos encontros e as regras de distância:
 
-- A entrada é separada por ponto e vírgula e deve usar o cabeçalho especificado
-  com sete colunas.
+- A entrada é separada por ponto e vírgula e deve usar o cabeçalho especificado com sete colunas.
 - As posições só são comparadas quando seus timestamps são exatamente iguais.
-- A distância de Haversine usa o raio terrestre exigido de 6.371.000 metros.
-  Um encontro exige distância **menor que 20 metros**.
-- Cada par não ordenado é registrado no máximo uma vez por timestamp; a ordem
-  dos IDs no resultado não altera a identificação do encontro.
+- A distância de Haversine usa o raio terrestre exigido de 6.371.000 metros. Um encontro exige distância **menor que 20 metros**.
+- Cada par não ordenado é registrado no máximo uma vez por timestamp; a ordem dos IDs no resultado não altera a identificação do encontro.
 - O campo `tipo` da saída é `protetiva`, `faccao` ou `generico`.
 
 ### Detecção e classificação
 
-O motor valida cada linha de entrada, agrupa os registros por timestamp e
-identifica encontros entre pares candidatos restringidos por um índice
-espacial de hash, confirmando cada distância com a fórmula de Haversine. Os
-tipos de encontro são classificados nesta ordem:
+O motor valida cada linha de entrada, agrupa os registros por timestamp e identifica encontros entre pares candidatos restringidos por um índice espacial de hash, confirmando cada distância com a fórmula de Haversine. Os tipos de encontro são classificados nesta ordem:
 
-1. `protetiva` quando uma das pessoas possui medida protetiva que restringe a
-   outra.
+1. `protetiva` quando uma das pessoas possui medida protetiva que restringe a outra.
 2. `faccao` quando ambas pertencem à mesma facção não vazia.
 3. `generico` para qualquer outro par dentro do limite de distância.
 
-Essa precedência evita classificar como encontro de facção um encontro que
-também se enquadre como protetivo.
+Essa precedência evita classificar como encontro de facção um encontro que também se enquadre como protetivo.
 
 ### Por que esta abordagem
 
-O agrupamento por timestamp exato impede comparações entre posições registradas
-em momentos diferentes. A leitura em fluxo e o agrupamento por timestamp evitam
-carregar todo o arquivo de entrada na memória antes do processamento; quando
-os timestamps estão fora de ordem, a CLI pode tentar novamente com ordenação
-externa em disco, em vez de exigir uma ordenação completa em memória. A
-indexação espacial dentro de cada grupo limita o cálculo de distância aos
-registros que podem realmente formar um encontro. O comando de benchmark exibe
-métricas de tempo e memória, úteis para comparar o desempenho, já que o tempo
-de execução é o critério de desempate do desafio.
+O agrupamento por timestamp exato impede comparações entre posições registradas em momentos diferentes. A leitura em fluxo e o agrupamento por timestamp evitam carregar todo o arquivo de entrada na memória antes do processamento; quando os timestamps estão fora de ordem, a CLI pode tentar novamente com ordenação externa em disco, em vez de exigir uma ordenação completa em memória. A indexação espacial dentro de cada grupo limita o cálculo de distância aos registros que podem realmente formar um encontro. O comando de benchmark exibe métricas de tempo e memória, úteis para comparar o desempenho, já que o tempo de execução é o critério de desempate do desafio.
 
-A saída JSON contém o tipo do encontro, os IDs dos dois monitorados, o
-timestamp, as coordenadas originais de cada pessoa e a distância calculada em
-metros. Por padrão, a CLI grava um arquivo JSON por conjunto de dados em
-`datasets/outputs`.
+A saída JSON contém o tipo do encontro, os IDs dos dois monitorados, o timestamp, as coordenadas originais de cada pessoa e a distância calculada em metros. Por padrão, a CLI grava um arquivo JSON por conjunto de dados em `datasets/outputs`.
 
-O agrupador em fluxo espera registros ordenados por timestamp e informa um
-`UnsortedTimestampsError` caso a ordem seja quebrada. A CLI pergunta se deve
-tentar novamente com ordenação externa. Conjuntos pequenos também podem ser
-agrupados em memória por uma API do motor.
+O agrupador em fluxo espera registros ordenados por timestamp e informa um `UnsortedTimestampsError` caso a ordem seja quebrada. A CLI pergunta se deve tentar novamente com ordenação externa. Conjuntos pequenos também podem ser agrupados em memória por uma API do motor.
 
 ## Tecnologias
 
 - Node.js com TypeScript e ESM
 - pnpm workspaces e catálogos de dependências
 - Zod 4 para validação dos dados
+- Varlock para variáveis de ambiente declaradas no `.env.schema`, com padrões e validação no arranque
 - Vite+ para execução de tarefas, lint, formatação e verificações
 - Vitest via Vite+ para testes unitários e de integração dos conjuntos de dados
 - tsdown/Rolldown para compilação dos pacotes
@@ -115,15 +85,13 @@ Execute as tarefas de desenvolvimento de todos os workspaces:
 pnpm dev
 ```
 
-Execute a suíte de testes, incluindo a análise de cada arquivo `.txt` presente
-em `datasets/inputs`:
+Execute a suíte de testes, incluindo a análise de cada arquivo `.txt` presente em `datasets/inputs`:
 
 ```bash
 pnpm test
 ```
 
-Antes de cada commit, o Husky executa as verificações dos arquivos preparados e
-esta suíte de testes. Uma verificação com falha impede o commit.
+Antes de cada commit, o Husky executa as verificações dos arquivos preparados e esta suíte de testes. Uma verificação com falha impede o commit.
 
 Compile o motor e desenvolva somente a CLI:
 
@@ -139,24 +107,22 @@ Processe um conjunto de dados e salve o JSON em `datasets/outputs`:
 pnpm start -- process datasets/inputs/dataset1.txt
 ```
 
-Coloque os arquivos de entrada do desafio em `datasets/inputs` e processe todos
-os arquivos `.txt` desse diretório:
+Coloque os arquivos de entrada do desafio em `datasets/inputs` e processe todos os arquivos `.txt` desse diretório:
 
 ```bash
 pnpm start -- process-all
 pnpm start -- process-all --input ./datasets/inputs --output ./datasets/outputs
 ```
 
-Execute o mesmo processamento sem gravar arquivos JSON e exiba métricas de
-tempo e memória para cada conjunto de dados:
+Execute o mesmo processamento sem gravar arquivos JSON e exiba métricas de tempo e memória para cada conjunto de dados:
 
 ```bash
 pnpm start -- benchmark
 ```
 
-Se os horários estiverem fora de ordem, a CLI perguntará se deve tentar
-novamente usando ordenação externa em disco. Use `--unsorted external` para
-selecionar essa alternativa sem a pergunta ou `--unsorted cancel` para cancelar.
+Se os horários estiverem fora de ordem, a CLI perguntará se deve tentar novamente usando ordenação externa em disco. Use `--unsorted external` para selecionar essa alternativa sem a pergunta ou `--unsorted cancel` para cancelar.
+
+Os padrões desses comandos podem ser configurados no [`.env.schema`](.env.schema) declarado com varlock; veja as [variáveis de ambiente da CLI](apps/cli/README.pt-BR.md#variáveis-de-ambiente).
 
 ## Compilação
 
