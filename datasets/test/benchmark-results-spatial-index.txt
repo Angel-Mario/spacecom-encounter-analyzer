@@ -1,0 +1,140 @@
+﻿SPACECOM ENCOUNTER ANALYZER
+────────────────────────────────────
+
+Dataset: dataset1.txt
+
+Records processed:       5,000
+Unique timestamps:       500
+
+Encounters detected:     4
+
+Generic encounters:      2
+Faction encounters:      1
+Protective encounters:   1
+
+Execution time:          0.08 s
+Heap used:               12.3 MB
+Memory (RSS):            60.2 MB
+
+Status: SUCCESS
+
+SPACECOM ENCOUNTER ANALYZER
+────────────────────────────────────
+
+Dataset: dataset2.txt
+
+Records processed:       25,000
+Unique timestamps:       1,250
+
+Encounters detected:     6
+
+Generic encounters:      3
+Faction encounters:      2
+Protective encounters:   1
+
+Execution time:          0.29 s
+Heap used:               15.3 MB
+Memory (RSS):            82.2 MB
+
+Status: SUCCESS
+
+SPACECOM ENCOUNTER ANALYZER
+────────────────────────────────────
+
+Dataset: dataset3.txt
+
+Records processed:       100,000
+Unique timestamps:       2,500
+
+Encounters detected:     10
+
+Generic encounters:      5
+Faction encounters:      3
+Protective encounters:   2
+
+Execution time:          0.99 s
+Heap used:               25.8 MB
+Memory (RSS):            91.1 MB
+
+Status: SUCCESS
+
+SPACECOM ENCOUNTER ANALYZER
+────────────────────────────────────
+
+Dataset: dataset4.txt
+
+Records processed:       400,020
+Unique timestamps:       6,667
+
+Encounters detected:     15
+
+Generic encounters:      7
+Faction encounters:      5
+Protective encounters:   3
+
+Execution time:          3.82 s
+Heap used:               21.9 MB
+Memory (RSS):            124.4 MB
+
+Status: SUCCESS
+
+SPACECOM ENCOUNTER ANALYZER
+────────────────────────────────────
+
+Dataset: dataset5.txt
+
+Records processed:       1,000,000
+Unique timestamps:       12,500
+
+Encounters detected:     21
+
+Generic encounters:      10
+Faction encounters:      7
+Protective encounters:   4
+
+Execution time:          9.50 s
+Heap used:               12.4 MB
+Memory (RSS):            124.4 MB
+
+Status: SUCCESS
+
+SPACECOM ENCOUNTER ANALYZER
+────────────────────────────────────
+
+Dataset: dataset6.txt
+
+Records processed:       8,000,000
+Unique timestamps:       80,000
+
+Encounters detected:     27
+
+Generic encounters:      12
+Faction encounters:      9
+Protective encounters:   6
+
+Execution time:          75.47 s
+Heap used:               65.8 MB
+Memory (RSS):            188.8 MB
+
+Status: SUCCESS
+
+SPACECOM ENCOUNTER ANALYZER
+────────────────────────────────────
+
+Dataset: dataset7.txt
+
+Records processed:       12,000,000
+Unique timestamps:       100,000
+
+Encounters detected:     35
+
+Generic encounters:      15
+Faction encounters:      12
+Protective encounters:   8
+
+Execution time:          115.50 s
+Heap used:               56.2 MB
+Memory (RSS):            187.9 MB
+
+Status: SUCCESS
+

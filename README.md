@@ -47,8 +47,9 @@ dataset schema, encounter output, and distance rules:
 
 ### Detection and classification
 
-The engine validates each input row, groups records by timestamp, and checks
-each pair within a group using the Haversine formula. Encounter types are
+The engine validates each input row, groups records by timestamp, and finds
+encounters among candidate pairs narrowed down by a spatial hash index,
+confirming each distance with the Haversine formula. Encounter types are
 classified in this order:
 
 1. `protetiva` when either person has a protective measure restricting the
@@ -65,7 +66,7 @@ Grouping by exact timestamp prevents comparisons between positions recorded at
 different times. Streaming input and timestamp grouping avoid loading the
 entire input file into memory before processing; when timestamps are unordered,
 the CLI can retry using disk-backed external sorting instead of requiring a
-full in-memory sort. Pairwise checks within each timestamp group keep the
+full in-memory sort. Spatial indexing within each timestamp group keeps the
 distance calculation focused on records that can actually form an encounter.
 The benchmark command reports execution and memory metrics, useful for
 comparing performance because execution time is the challenge's tie-breaker.

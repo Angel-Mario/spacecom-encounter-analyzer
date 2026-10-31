@@ -1,0 +1,41 @@
+Spacecom Encounter Analyzer - CPU profile
+
+Dataset: dataset7.txt
+Records: 12,000,000
+Timestamps: 100,000
+Profiled run: 119.96 s (Node CPU profiler enabled)
+CPU samples: 74,783, approximately 120.03 s sampled
+Command:
+  node --cpu-prof --cpu-prof-dir="<temporary-profile-directory>" apps/cli/dist/index.mjs process datasets/inputs/dataset7.txt --output "<temporary-output-directory>"
+
+Top sampled self time (approximate; V8 CPU sampling):
+
+Area / function                                      Time       Share
+Timestamp schema refinement (Date validation)        25.48 s     21.2%
+Encounter detection                                  24.25 s     20.2%
+Zod validation runner                                7.22 s      6.0%
+Streamed record reader                               6.97 s      5.8%
+Dataset row parser                                   6.62 s      5.5%
+Zod parsing                                          5.91 s      4.9%
+Candidate cell lookup                                3.74 s      3.1%
+Spatial entry creation                               1.64 s      1.4%
+Delimited-row parsing                                1.22 s      1.0%
+Garbage collection                                   0.98 s      0.8%
+
+Interpretation:
+- The hot detector is still significant, but the complete detection generator
+  accounts for about 20% of sampled CPU time; the direct neighboring-cell
+  lookup accounts for about 3%. A worker pool limited to detection would
+  therefore have a bounded end-to-end benefit and add message-transfer cost.
+- Timestamp validation is repeated for every record even though there are
+  only 100,000 unique timestamps. Its refinement alone accounts for about
+  21% of sampled CPU time. Caching successful timestamp validation by value
+  is the strongest low-risk optimization to test next; it must retain the
+  current validation for previously unseen timestamps.
+- Parsing and validation remain meaningful costs. Benchmark any change against
+  the same encounter counts and use repeated runs because these are sampled
+  profiles and single-run wall-clock results.
+
+The profiler output and this run's small JSON output were kept in the system
+temporary directory; no profile binaries or generated encounter output were
+added to the repository.

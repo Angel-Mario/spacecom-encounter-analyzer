@@ -116,10 +116,17 @@ protetiva que restringe a outra; caso contrário, é `faccao` quando ambas
 compartilham um ID de facção não vazio, ou `generico` nos demais casos. Essa
 prioridade é importante porque as categorias podem se sobrepor.
 
-O detector verifica todos os pares dentro de um grupo de timestamp; portanto,
-o trabalho cresce quadraticamente conforme aumenta a quantidade de registros
-no grupo. Agrupar por timestamp evita comparar registros que não podem formar
-um encontro segundo as regras do desafio. A leitura em fluxo evita carregar
+O detector restringe os pares candidatos dentro de um grupo de timestamp com
+um índice espacial de hash em vez de verificar todos os pares; portanto, o
+trabalho cresce conforme a quantidade de registros no grupo, e não com o seu
+quadrado. Os registros são mapeados para coordenadas cartesianas geocêntricas
+e agrupados em células de 25 metros; cada registro avalia apenas candidatos
+de células vizinhas, com verificações exatas de célula descartando colisões
+de hash e a ordem dos índices mantendo cada par único. Como qualquer par a
+menos de 20 metros sempre cai em células adjacentes, nenhum encontro é
+perdido, e a verificação final de Haversine decide cada distância.
+Agrupar por timestamp evita comparar registros que não podem formar um
+encontro segundo as regras do desafio. A leitura em fluxo evita carregar
 primeiro o arquivo inteiro, e a ordenação externa permite processar arquivos
 fora de ordem sem uma ordenação em memória. Para gerar uma saída do desafio, o
 chamador pode classificar os candidatos e passar os encontros resultantes para

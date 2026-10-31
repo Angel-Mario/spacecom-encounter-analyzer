@@ -51,8 +51,9 @@ dados, o resultado dos encontros e as regras de distância:
 ### Detecção e classificação
 
 O motor valida cada linha de entrada, agrupa os registros por timestamp e
-verifica cada par dentro do grupo usando a fórmula de Haversine. Os tipos de
-encontro são classificados nesta ordem:
+identifica encontros entre pares candidatos restringidos por um índice
+espacial de hash, confirmando cada distância com a fórmula de Haversine. Os
+tipos de encontro são classificados nesta ordem:
 
 1. `protetiva` quando uma das pessoas possui medida protetiva que restringe a
    outra.
@@ -68,8 +69,8 @@ O agrupamento por timestamp exato impede comparações entre posições registra
 em momentos diferentes. A leitura em fluxo e o agrupamento por timestamp evitam
 carregar todo o arquivo de entrada na memória antes do processamento; quando
 os timestamps estão fora de ordem, a CLI pode tentar novamente com ordenação
-externa em disco, em vez de exigir uma ordenação completa em memória. As
-comparações par a par dentro de cada grupo limitam o cálculo de distância aos
+externa em disco, em vez de exigir uma ordenação completa em memória. A
+indexação espacial dentro de cada grupo limita o cálculo de distância aos
 registros que podem realmente formar um encontro. O comando de benchmark exibe
 métricas de tempo e memória, úteis para comparar o desempenho, já que o tempo
 de execução é o critério de desempate do desafio.

@@ -114,9 +114,16 @@ measure restricting the other; otherwise, they are `faccao` when both people
 share a non-empty faction ID, and `generico` in all other cases. This precedence
 is important because encounter categories can overlap.
 
-The detector checks all pairs within a timestamp group, so its work for a
-group grows quadratically with that group's number of records. Grouping by
-timestamp avoids comparing records that cannot match under the challenge rules.
+The detector narrows candidate pairs within a timestamp group with a spatial
+hash index instead of checking every pair, so its work for a group grows with
+that group's number of records rather than with the square of it. Records are
+mapped to Earth-centered Cartesian coordinates and bucketed into 25-meter
+cells; each record only evaluates candidates from neighboring cells, with
+exact cell checks discarding hash collisions and index ordering keeping every
+pair unique. Because any pair within 20 meters always falls in adjacent
+cells, no encounter is missed, and the final Haversine check decides each
+distance. Grouping by timestamp avoids comparing records that cannot match
+under the challenge rules.
 Streaming input avoids first loading the full dataset, while external sorting
 supports out-of-order files without an in-memory sort. Callers that need to
 write a challenge output can classify the yielded candidates and pass the

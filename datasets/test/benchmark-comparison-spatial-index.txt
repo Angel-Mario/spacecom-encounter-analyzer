@@ -1,0 +1,26 @@
+Spacecom Encounter Analyzer - spatial index benchmark
+
+Baseline: benchmark-results-pre-optimizations.txt
+Optimized run: benchmark-results-spatial-index.txt
+Optimized run command: node apps/cli/dist/index.mjs benchmark
+
+Dataset   Baseline (s)   Spatial index (s)   Time change   Encounters   RSS after (MB)
+dataset1          0.08                0.08         0.0%            4            60.2
+dataset2          0.26                0.29       +11.5%            6            82.2
+dataset3          1.08                0.99        -8.3%           10            91.1
+dataset4          4.43                3.82       -13.8%           15           124.4
+dataset5         12.20                9.50       -22.1%           21           124.4
+dataset6        105.59               75.47       -28.5%           27           188.8
+dataset7        191.23              115.50       -39.6%           35           187.9
+
+Negative time change means faster; positive means slower. Encounter counts match
+the baseline for every dataset. The small-dataset differences are within the
+range where startup and runtime noise can dominate.
+
+Datasets 6 and 7 together improved from 296.82 s to 190.97 s: 35.7% less
+processing time (about 1.55x throughput). Dataset 7 improved by about 1.66x.
+
+RSS is the process measurement reported at the end of each dataset. It can vary
+with Node.js garbage collection and process state; dataset 6 used 54.9 MB more
+RSS in this run, while dataset 7 was essentially unchanged (+0.6 MB). These are
+single-run comparisons, not statistical averages.
