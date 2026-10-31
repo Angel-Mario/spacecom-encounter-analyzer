@@ -8,6 +8,22 @@ O ponto de partida — após o commit `docs: document challenge approach in Engl
 
 ---
 
+## Ambiente de teste
+
+Todos os benchmarks foram capturados na seguinte máquina:
+
+| Componente        | Detalhes                                                                                                        |
+| ----------------- | --------------------------------------------------------------------------------------------------------------- |
+| CPU               | Intel Core i5-10500H @ 2,50 GHz                                                                                 |
+| Núcleos / threads | 6 núcleos / 12 processadores lógicos                                                                            |
+| Perfil de energia | **Economia de energia (baixo desempenho)** — configuração conservadora usada em todas as execuções documentadas |
+
+O estágio paralelo satura os threads disponíveis via `availableParallelism() - 1`, de modo que o perfil de energia tem impacto perceptível nos resultados. A título de curiosidade, executar o dataset 7 com o perfil de **alto desempenho** reduziu o tempo de execução de ~22 s para ~12 s — aproximadamente 1,8× de ganho sobre o resultado em economia de energia somente para esse dataset.
+
+Todas as tabelas deste documento refletem os números em modo economia de energia e são, portanto, conservadoras em relação ao que o mesmo código alcançaria em uma carga de trabalho típica de desenvolvimento ou servidor.
+
+---
+
 ## Linha de base: correta, mas O(n²) por grupo de timestamp
 
 A implementação inicial já era em fluxo contínuo (nenhum arquivo carregado inteiramente na memória) e validava cada linha com esquemas Zod. A detecção de encontros funcionava comparando todos os pares possíveis dentro de cada grupo de timestamp.

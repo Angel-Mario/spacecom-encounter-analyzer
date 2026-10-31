@@ -8,6 +8,22 @@ The starting point — after the commit `docs: document challenge approach in En
 
 ---
 
+## Test environment
+
+All benchmarks were captured on the following machine:
+
+| Component       | Details                                                                                     |
+| --------------- | ------------------------------------------------------------------------------------------- |
+| CPU             | Intel Core i5-10500H @ 2.50 GHz                                                             |
+| Cores / threads | 6 cores / 12 logical processors                                                             |
+| Power profile   | **Battery saver (low performance)** — the conservative setting used for all documented runs |
+
+The parallel stage saturates available threads via `availableParallelism() - 1`, so the power profile has a noticeable effect on the results. As a curiosity, running dataset 7 under the **high-performance** power profile reduced its execution time from ~22 s to ~12 s — roughly a 1.8× gain over the battery-saver result for that dataset alone.
+
+All tables in this document reflect the battery-saver numbers and are therefore conservative relative to what the same code would achieve under a typical development or server workload.
+
+---
+
 ## Baseline: correct but O(n²) per timestamp group
 
 The initial implementation was already streaming (no full file loaded into memory) and validated every row with Zod schemas. Encounter detection worked by comparing every possible pair within each timestamp group.

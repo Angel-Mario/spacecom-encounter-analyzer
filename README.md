@@ -60,6 +60,8 @@ The streaming grouper expects records in timestamp order and reports an `Unsorte
 
 For a detailed account of how the engine was optimized from the initial O(n²) implementation to the current parallel architecture — including spatial hashing, ECEF chord gating, timestamp caching, and worker parallelization — see [PERFORMANCE.md](PERFORMANCE.md).
 
+All benchmarks were run on an Intel Core i5-10500H (6 cores / 12 threads) under the **battery-saver power profile**. The ~22 s figure for dataset 7 is therefore conservative; the same run under the high-performance profile measured ~12 s.
+
 ## Technologies
 
 - Node.js with TypeScript and ESM

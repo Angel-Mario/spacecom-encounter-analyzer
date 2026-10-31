@@ -60,6 +60,8 @@ O agrupador em fluxo espera registros ordenados por timestamp e informa um `Unso
 
 Para uma descrição detalhada do processo de otimização do motor — desde a implementação O(n²) inicial até a arquitetura paralela atual, incluindo hash espacial, gate de corda ECEF, cache de timestamps e paralelização com workers — veja [PERFORMANCE.pt-BR.md](PERFORMANCE.pt-BR.md).
 
+Todos os benchmarks foram executados em um Intel Core i5-10500H (6 núcleos / 12 threads) com o **perfil de energia em economia de energia (baixo desempenho)**. O tempo de ~22 s para o dataset 7 é, portanto, conservador; a mesma execução com o perfil de alto desempenho mediu ~12 s.
+
 ## Tecnologias
 
 - Node.js com TypeScript e ESM
