@@ -15,10 +15,14 @@ packages/
   engine/    Reusable engine package, domain types, and dataset infrastructure
 ```
 
-The engine includes Zod schemas for validating dataset rows, a parser for the
-semicolon-delimited input files, and file readers/writers. Encounter detection
-and the complete CLI workflow are still being implemented. A future Electron +
-React desktop app is also planned, but does not exist yet.
+The engine includes Zod schemas for validating dataset rows, a streaming reader
+for semicolon-delimited inputs, timestamp grouping, and file writers. The
+streaming grouper requires records to be sorted by timestamp and reports an
+`UnsortedTimestampsError` otherwise. Unsorted data can be grouped in memory for
+small inputs or externally sorted in disk-backed chunks for larger inputs;
+external sorting uses temporary files and bounded merge passes. The CLI does
+not yet prompt for a fallback strategy. Encounter detection and the complete
+CLI workflow are still being implemented.
 
 ## Technologies
 

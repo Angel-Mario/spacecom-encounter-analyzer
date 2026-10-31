@@ -161,14 +161,8 @@ const describeIssues = (error: z.ZodError): string =>
     })
     .join("; ");
 
-export const parseDataset = (content: string): MonitoredPerson[] => {
-  const [headerLine, ...recordLines] = content.split(/\r?\n/u);
-
-  if (headerLine === undefined) {
-    throw new Error("Dataset is empty");
-  }
-
-  const [firstHeader, ...remainingHeaders] = parseDelimitedRecord(headerLine, 1);
+export const parseDatasetHeader = (line: string): void => {
+  const [firstHeader, ...remainingHeaders] = parseDelimitedRecord(line, 1);
   const header = [firstHeader?.replace(/^\uFEFF/u, "") ?? "", ...remainingHeaders];
   const parsedHeader = DatasetHeadersSchema.safeParse(header);
 
@@ -177,48 +171,64 @@ export const parseDataset = (content: string): MonitoredPerson[] => {
       cause: parsedHeader.error,
     });
   }
+};
+
+export const parseDatasetRow = (line: string, lineNumber: number): MonitoredPerson | undefined => {
+  if (line.trim() === "") {
+    return undefined;
+  }
+
+  const fields = parseDelimitedRecord(line, lineNumber);
+  if (fields.length !== DATASET_HEADERS.length) {
+    throw new Error(
+      `Invalid dataset row ${lineNumber}: expected ${DATASET_HEADERS.length} fields, received ${fields.length}`,
+    );
+  }
+
+  const [
+    idMonitorado,
+    faccaoMonitorado,
+    timestamp,
+    latitude,
+    longitude,
+    medidaProtetiva,
+    idsRestricaoMedida,
+  ] = fields;
+  const parsedRecord = DatasetRowSchema.safeParse({
+    faccaoMonitorado,
+    idMonitorado,
+    idsRestricaoMedida,
+    latitude,
+    longitude,
+    medidaProtetiva,
+    timestamp,
+  });
+
+  if (!parsedRecord.success) {
+    throw new Error(`Invalid dataset row ${lineNumber}: ${describeIssues(parsedRecord.error)}`, {
+      cause: parsedRecord.error,
+    });
+  }
+
+  return parsedRecord.data;
+};
+
+export const parseDataset = (content: string): MonitoredPerson[] => {
+  const [headerLine, ...recordLines] = content.split(/\r?\n/u);
+
+  if (headerLine === undefined) {
+    throw new Error("Dataset is empty");
+  }
+
+  parseDatasetHeader(headerLine);
 
   const people: MonitoredPerson[] = [];
 
   for (const [index, line] of recordLines.entries()) {
-    const lineNumber = index + 2;
-    if (line.trim() === "") {
-      continue;
+    const person = parseDatasetRow(line, index + 2);
+    if (person) {
+      people.push(person);
     }
-
-    const fields = parseDelimitedRecord(line, lineNumber);
-    if (fields.length !== DATASET_HEADERS.length) {
-      throw new Error(
-        `Invalid dataset row ${lineNumber}: expected ${DATASET_HEADERS.length} fields, received ${fields.length}`,
-      );
-    }
-
-    const [
-      idMonitorado,
-      faccaoMonitorado,
-      timestamp,
-      latitude,
-      longitude,
-      medidaProtetiva,
-      idsRestricaoMedida,
-    ] = fields;
-    const parsedRecord = DatasetRowSchema.safeParse({
-      faccaoMonitorado,
-      idMonitorado,
-      idsRestricaoMedida,
-      latitude,
-      longitude,
-      medidaProtetiva,
-      timestamp,
-    });
-
-    if (!parsedRecord.success) {
-      throw new Error(`Invalid dataset row ${lineNumber}: ${describeIssues(parsedRecord.error)}`, {
-        cause: parsedRecord.error,
-      });
-    }
-
-    people.push(parsedRecord.data);
   }
 
   return people;

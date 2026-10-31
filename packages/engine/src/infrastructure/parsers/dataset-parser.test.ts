@@ -3,16 +3,16 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import { readDatasetFile } from "../files/file-dataset-reader.js";
+import { readDatasetGroups } from "../files/file-dataset-reader.js";
 import { parseDataset } from "./dataset-parser.js";
 
 const INPUTS_DIRECTORY = new URL("../../../../../datasets/inputs/", import.meta.url);
-const EXPECTED_RECORD_COUNTS = new Map([
-  ["dataset1.txt", 5000],
-  ["dataset2.txt", 25_000],
-  ["dataset3.txt", 100_000],
-  ["dataset4.txt", 400_020],
-  ["dataset5.txt", 1_000_000],
+const EXPECTED_DATASET_COUNTS = new Map([
+  ["dataset1.txt", { records: 5000, timestamps: 500 }],
+  ["dataset2.txt", { records: 25_000, timestamps: 1250 }],
+  ["dataset3.txt", { records: 100_000, timestamps: 2500 }],
+  ["dataset4.txt", { records: 400_020, timestamps: 6667 }],
+  ["dataset5.txt", { records: 1_000_000, timestamps: 12_500 }],
 ]);
 
 const VALID_HEADER =
@@ -47,7 +47,7 @@ describe("parseDataset", () => {
     expect(() => parseDataset(dataset)).toThrow(/unclosed quoted field/iu);
   });
 
-  it("parses every dataset currently available in datasets/inputs", async () => {
+  it("streams and groups every dataset currently available in datasets/inputs", async () => {
     const directoryEntries = await readdir(INPUTS_DIRECTORY);
     const files = directoryEntries.filter((fileName) => fileName.endsWith(".txt")).toSorted();
 
@@ -55,15 +55,29 @@ describe("parseDataset", () => {
 
     for (const fileName of files) {
       const inputPath = fileURLToPath(new URL(fileName, INPUTS_DIRECTORY));
-      // Parse sequentially so the million-row datasets do not overlap in memory.
+      let recordCount = 0;
+      let timestampCount = 0;
+      let previousTimestamp: string | undefined;
+
+      // Processa um dataset por vez para manter o uso de memória limitado.
       // eslint-disable-next-line no-await-in-loop
-      const people = await readDatasetFile(inputPath);
+      for await (const [timestamp, people] of readDatasetGroups(inputPath)) {
+        expect(timestamp >= (previousTimestamp ?? timestamp), fileName).toBe(true);
+        expect(
+          people.every((person) => person.timestamp === timestamp),
+          fileName,
+        ).toBe(true);
+        recordCount += people.length;
+        timestampCount += 1;
+        previousTimestamp = timestamp;
+      }
 
-      expect(people.length, fileName).toBeGreaterThan(0);
+      expect(recordCount, fileName).toBeGreaterThan(0);
 
-      const expectedRecordCount = EXPECTED_RECORD_COUNTS.get(fileName);
-      if (expectedRecordCount !== undefined) {
-        expect(people.length, fileName).toBe(expectedRecordCount);
+      const expectedCounts = EXPECTED_DATASET_COUNTS.get(fileName);
+      if (expectedCounts !== undefined) {
+        expect(recordCount, fileName).toBe(expectedCounts.records);
+        expect(timestampCount, fileName).toBe(expectedCounts.timestamps);
       }
     }
   });
