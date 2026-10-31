@@ -23,8 +23,9 @@ small inputs or externally sorted in disk-backed chunks for larger inputs;
 external sorting uses temporary files and bounded merge passes. The CLI does
 not yet prompt for a fallback strategy. The engine now detects close pairs
 within each timestamp group using Haversine distance and the strict 20-meter
-limit. Classification into generic, faction, or protective encounters and the
-complete CLI workflow are still being implemented.
+limit, then classifies each pair as protective, faction, or generic. The
+classifier prioritizes protective restrictions over shared faction membership
+when both rules apply. The complete CLI workflow is still being implemented.
 
 ## Technologies
 

@@ -7,6 +7,7 @@ export type {
   Timestamp,
 } from "./domain.js";
 export { calculateDistanceMeters, EARTH_RADIUS_METERS } from "./core/algorithms/haversine.js";
+export { classifyEncounter } from "./core/classifiers/encounter-classifier.js";
 export {
   detectEncounters,
   MAX_ENCOUNTER_DISTANCE_METERS,
