@@ -54,6 +54,12 @@ The JSON output contains the encounter type, the two monitored IDs, the timestam
 
 The streaming grouper expects records in timestamp order and reports an `UnsortedTimestampsError` otherwise. The CLI prompts before retrying an unordered dataset with external sorting. Small datasets can also be grouped in memory through an engine API.
 
+> The infographic below was AI-generated to help readers quickly grasp the optimization journey. All numbers and technical details are accurate and derived from the actual benchmark runs documented in [PERFORMANCE.md](PERFORMANCE.md).
+
+![Performance journey infographic: from 191s to 22s](docs/images/performance-journey.png)
+
+For a detailed account of how the engine was optimized from the initial O(n²) implementation to the current parallel architecture — including spatial hashing, ECEF chord gating, timestamp caching, and worker parallelization — see [PERFORMANCE.md](PERFORMANCE.md).
+
 ## Technologies
 
 - Node.js with TypeScript and ESM
@@ -92,6 +98,8 @@ pnpm test
 ```
 
 Before each commit, Husky runs the staged-file checks and this test suite. A failed check blocks the commit.
+
+For a full description of every test case, the dataset integration methodology, and the performance benchmarks, see [VALIDATION.md](VALIDATION.md).
 
 Build the engine and develop only the CLI:
 

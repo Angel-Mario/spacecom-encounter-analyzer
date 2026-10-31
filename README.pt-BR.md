@@ -54,6 +54,12 @@ A saída JSON contém o tipo do encontro, os IDs dos dois monitorados, o timesta
 
 O agrupador em fluxo espera registros ordenados por timestamp e informa um `UnsortedTimestampsError` caso a ordem seja quebrada. A CLI pergunta se deve tentar novamente com ordenação externa. Conjuntos pequenos também podem ser agrupados em memória por uma API do motor.
 
+> A infografia abaixo foi gerada por IA com o objetivo de ajudar o leitor a compreender rapidamente a jornada de otimização. Todos os números e detalhes técnicos são precisos e derivados das execuções de benchmark documentadas em [PERFORMANCE.pt-BR.md](PERFORMANCE.pt-BR.md).
+
+![Infografia da jornada de desempenho: de 191s para 22s](docs/images/performance-journey.png)
+
+Para uma descrição detalhada do processo de otimização do motor — desde a implementação O(n²) inicial até a arquitetura paralela atual, incluindo hash espacial, gate de corda ECEF, cache de timestamps e paralelização com workers — veja [PERFORMANCE.pt-BR.md](PERFORMANCE.pt-BR.md).
+
 ## Tecnologias
 
 - Node.js com TypeScript e ESM
@@ -92,6 +98,8 @@ pnpm test
 ```
 
 Antes de cada commit, o Husky executa as verificações dos arquivos preparados e esta suíte de testes. Uma verificação com falha impede o commit.
+
+Para uma descrição completa de cada caso de teste, a metodologia de integração dos conjuntos de dados e os benchmarks de desempenho, veja [VALIDATION.md](VALIDATION.md) (em inglês).
 
 Compile o motor e desenvolva somente a CLI:
 
