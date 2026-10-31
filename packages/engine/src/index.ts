@@ -1,11 +1,16 @@
 export type {
   Coordinates,
   Encounter,
+  EncounterCandidate,
   EncounterType,
   MonitoredPerson,
   Timestamp,
 } from "./domain.js";
 export { calculateDistanceMeters, EARTH_RADIUS_METERS } from "./core/algorithms/haversine.js";
+export {
+  detectEncounters,
+  MAX_ENCOUNTER_DISTANCE_METERS,
+} from "./core/detectors/encounter-detector.js";
 export {
   groupSortedByTimestamp,
   groupUnsortedByTimestamp,

@@ -11,6 +11,12 @@ export interface Encounter {
   distanciaMetros: number;
 }
 
+export interface EncounterCandidate {
+  timestamp: Timestamp;
+  participants: readonly [MonitoredPerson, MonitoredPerson];
+  distanciaMetros: number;
+}
+
 export type EncounterType = "generico" | "faccao" | "protetiva";
 
 export interface MonitoredPerson {
