@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="300" viewBox="0 0 920 300" role="img" aria-labelledby="title description">
+  <title id="title">Haversine distance formula</title>
+  <desc id="description">a equals sine squared delta phi over two plus cosine phi one cosine phi two sine squared delta lambda over two. c equals two atan2 square root a, square root one minus a. Distance d equals Earth radius R times c.</desc>
+  <rect width="920" height="300" rx="18" fill="#101820" />
+  <text x="44" y="58" fill="#9bd1ff" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="600">HAVERSINE DISTANCE</text>
+  <text x="48" y="116" fill="#f3f6f8" font-family="Georgia, 'Times New Roman', serif" font-size="25">a = sin²(Δφ / 2) + cos(φ₁) · cos(φ₂) · sin²(Δλ / 2)</text>
+  <text x="48" y="169" fill="#f3f6f8" font-family="Georgia, 'Times New Roman', serif" font-size="25">c = 2 · atan2(√a, √(1 − a))</text>
+  <text x="48" y="222" fill="#ffffff" font-family="Georgia, 'Times New Roman', serif" font-size="29" font-weight="700">d = R · c</text>
+  <text x="48" y="270" fill="#c6d1da" font-family="Segoe UI, Arial, sans-serif" font-size="17">φ = latitude · λ = longitude · angles in radians · R = 6,371,000 m</text>
+</svg>

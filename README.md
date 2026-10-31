@@ -1,9 +1,23 @@
 # Spacecom Encounter Analyzer
 
-Spacecom Encounter Analyzer is a Node.js/TypeScript command-line application for
-analyzing geolocation datasets and detecting encounters between monitored
-individuals. The repository is a pnpm monorepo; its reusable engine is intended
-to be shared by the CLI and a future desktop application.
+[Leia em português](README.pt-BR.md)
+
+Spacecom Encounter Analyzer is a Node.js/TypeScript solution to the Spacecom
+Trainee Tech 2027 encounter-detection challenge. It analyzes geolocation
+datasets and detects encounters between monitored individuals. The repository
+is a pnpm monorepo containing the CLI and its encounter-analysis engine.
+
+## Screenshots
+
+The CLI provides commands for processing datasets and measuring execution and
+memory usage:
+
+![CLI commands and available options](docs/images/commands.png)
+
+The benchmark command reports a summary for each dataset without writing JSON
+files:
+
+![Example benchmark output](docs/images/benchmark.png)
 
 ## Current architecture
 
@@ -15,17 +29,56 @@ packages/
   engine/    Reusable engine package, domain types, and dataset infrastructure
 ```
 
-The engine includes Zod schemas for validating dataset rows, a streaming reader
-for semicolon-delimited inputs, timestamp grouping, and file writers. The
-streaming grouper requires records to be sorted by timestamp and reports an
-`UnsortedTimestampsError` otherwise. Unsorted data can be grouped in memory for
-small inputs or externally sorted in disk-backed chunks for larger inputs;
-external sorting uses temporary files and bounded merge passes. The CLI does
-prompt before retrying an unordered dataset with external sorting. The engine detects close pairs
-within each timestamp group using Haversine distance and the strict 20-meter
-limit, then classifies each pair as protective, faction, or generic. The
-classifier prioritizes protective restrictions over shared faction membership
-when both rules apply.
+For component-specific details, see the [CLI README](apps/cli/README.md) and
+the [engine README](packages/engine/README.md).
+
+## Challenge rules and solution
+
+The solution follows the challenge's required JavaScript/TypeScript runtime,
+dataset schema, encounter output, and distance rules:
+
+- Input is semicolon-delimited and must use the specified seven-column header.
+- Positions are compared only when their timestamps match exactly.
+- Haversine distance uses the challenge's Earth radius of 6,371,000 meters.
+  An encounter requires a distance **strictly less than 20 meters**.
+- Each unordered pair is reported at most once per timestamp; ID order in the
+  result does not affect whether it is an encounter.
+- The output `tipo` is `protetiva`, `faccao`, or `generico`.
+
+### Detection and classification
+
+The engine validates each input row, groups records by timestamp, and checks
+each pair within a group using the Haversine formula. Encounter types are
+classified in this order:
+
+1. `protetiva` when either person has a protective measure restricting the
+   other.
+2. `faccao` when both people share the same non-empty faction ID.
+3. `generico` for any other pair within the distance threshold.
+
+This precedence ensures a protective encounter is not mislabeled as a faction
+encounter when both rules apply.
+
+### Why this approach
+
+Grouping by exact timestamp prevents comparisons between positions recorded at
+different times. Streaming input and timestamp grouping avoid loading the
+entire input file into memory before processing; when timestamps are unordered,
+the CLI can retry using disk-backed external sorting instead of requiring a
+full in-memory sort. Pairwise checks within each timestamp group keep the
+distance calculation focused on records that can actually form an encounter.
+The benchmark command reports execution and memory metrics, useful for
+comparing performance because execution time is the challenge's tie-breaker.
+
+The JSON output contains the encounter type, the two monitored IDs, the
+timestamp, each person's original coordinates, and the calculated distance in
+meters. The CLI writes one JSON file per processed dataset under
+`datasets/outputs` by default.
+
+The streaming grouper expects records in timestamp order and reports an
+`UnsortedTimestampsError` otherwise. The CLI prompts before retrying an
+unordered dataset with external sorting. Small datasets can also be grouped in
+memory through an engine API.
 
 ## Technologies
 
@@ -57,7 +110,7 @@ Run all workspace development tasks:
 pnpm dev
 ```
 
-Run the engine tests, including parsing every `.txt` file currently in
+Run the test suite, including parsing every `.txt` file currently in
 `datasets/inputs`:
 
 ```bash
@@ -81,7 +134,8 @@ Process one dataset and save its JSON under `datasets/outputs`:
 pnpm start -- process datasets/inputs/dataset1.txt
 ```
 
-Process every `.txt` file in the input directory:
+Place challenge input files in `datasets/inputs`, then process every `.txt`
+file in that directory:
 
 ```bash
 pnpm start -- process-all

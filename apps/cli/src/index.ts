@@ -8,7 +8,9 @@ const main = async (): Promise<void> => {
   }
 
   if (args.length === 0) {
-    process.stdout.write(`Spacecom Encounter Analyzer CLI v${packageJson.version}\n\n`);
+    process.stdout.write(
+      `Spacecom Encounter Analyzer CLI v${packageJson.version}\n\n`
+    );
     await runCommand(["--help"]);
     return;
   }

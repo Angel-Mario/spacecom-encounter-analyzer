@@ -17,6 +17,16 @@ local.db-*
 .env
 .env*.local
 
+# datasets
+datasets/outputs/*
+!datasets/outputs/respostas1.json
+!datasets/outputs/respostas2.json
+!datasets/outputs/respostas3.json
+datasets/inputs/*
+!datasets/inputs/dataset1.txt
+!datasets/inputs/dataset2.txt
+!datasets/inputs/dataset3.txt
+
 # IDEs and editors
 .vscode/*
 !.vscode/settings.json
