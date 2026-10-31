@@ -6,7 +6,10 @@ import { describe, expect, it } from "vitest";
 import { readDatasetGroups } from "../files/file-dataset-reader.js";
 import { parseDataset } from "./dataset-parser.js";
 
-const INPUTS_DIRECTORY = new URL("../../../../../datasets/inputs/", import.meta.url);
+const INPUTS_DIRECTORY = new URL(
+  "../../../../../datasets/inputs/",
+  import.meta.url
+);
 const EXPECTED_DATASET_COUNTS = new Map([
   ["dataset1.txt", { records: 5000, timestamps: 500 }],
   ["dataset2.txt", { records: 25_000, timestamps: 1250 }],
@@ -47,9 +50,14 @@ describe("parseDataset", () => {
     expect(() => parseDataset(dataset)).toThrow(/unclosed quoted field/iu);
   });
 
+  // Lê todos os datasets em sequência; o total cresce a cada dataset
+  // adicionado a datasets/inputs, de modo que o tempo padrão de 60 s fica
+  // apertado demais.
   it("streams and groups every dataset currently available in datasets/inputs", async () => {
     const directoryEntries = await readdir(INPUTS_DIRECTORY);
-    const files = directoryEntries.filter((fileName) => fileName.endsWith(".txt")).toSorted();
+    const files = directoryEntries
+      .filter((fileName) => fileName.endsWith(".txt"))
+      .toSorted();
 
     expect(files.length).toBeGreaterThan(0);
 
@@ -62,10 +70,12 @@ describe("parseDataset", () => {
       // Processa um dataset por vez para manter o uso de memória limitado.
       // eslint-disable-next-line no-await-in-loop
       for await (const [timestamp, people] of readDatasetGroups(inputPath)) {
-        expect(timestamp >= (previousTimestamp ?? timestamp), fileName).toBe(true);
+        expect(timestamp >= (previousTimestamp ?? timestamp), fileName).toBe(
+          true
+        );
         expect(
           people.every((person) => person.timestamp === timestamp),
-          fileName,
+          fileName
         ).toBe(true);
         recordCount += people.length;
         timestampCount += 1;
@@ -80,5 +90,5 @@ describe("parseDataset", () => {
         expect(timestampCount, fileName).toBe(expectedCounts.timestamps);
       }
     }
-  });
+  }, 180_000);
 });

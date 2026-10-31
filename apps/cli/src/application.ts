@@ -4,9 +4,9 @@ import { performance } from "node:perf_hooks";
 import { createInterface } from "node:readline/promises";
 
 import {
+  analyzeDatasetParallel,
   classifyEncounter,
   detectEncountersInGroup,
-  readDatasetGroups,
   readDatasetGroupsWithExternalSort,
   UnsortedTimestampsError,
   writeJsonOutput,
@@ -98,7 +98,10 @@ const collectWithFallback = async (
   }
 
   try {
-    return await collectResults(readDatasetGroups(datasetPath));
+    // Threads de worker parseiam e detectam encontros em paralelo; o engine
+    // roda o caminho serial internamente quando o arquivo é pequeno demais
+    // para ser dividido.
+    return await analyzeDatasetParallel(datasetPath);
   } catch (error) {
     if (!(error instanceof UnsortedTimestampsError)) {
       throw error;

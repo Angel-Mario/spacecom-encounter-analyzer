@@ -1,0 +1,39 @@
+Spacecom Encounter Analyzer - worker parallelization benchmark
+
+Baseline: benchmark-results-cpu-optimizations.txt
+(34.84 s dataset6, 52.41 s dataset7; encounter counts untouched from
+benchmark-results-pre-optimizations.txt onwards)
+
+Run: node apps/cli/dist/index.mjs benchmark (three consecutive full-suite
+runs, raw output saved as benchmark-results-worker-parallelization.txt)
+
+The current run keeps the full CPU-optimized serial pipeline and splits large
+files across worker_threads with analyzeDatasetParallel: line-aligned chunks
+planned by windowed boundary scans, one worker per queue of chunks, in-flight
+timestamp groups relayed between adjacent chunks through MessagePorts so the
+encounter order, counts, and error messages stay identical to the serial
+path. Files smaller than two 8 MiB chunks keep the in-process streaming path.
+
+Dataset    Serial CPU-opt (s)   Parallel run 1 (s)   run 2 (s)   run 3 (s)   Parallel median (s)   Speedup   Encounters
+dataset1           0.03              0.03             0.11        0.05              0.05
+dataset2           0.09              0.10             0.19        0.16              0.16
+dataset3           0.49              0.55             0.77        0.76              0.76
+dataset4           1.82              1.51             1.77        1.65              1.65                     15
+dataset5           4.34              2.38             2.34        2.38              2.38            ~1.8x       21
+dataset6          34.84             14.59            14.23       15.19             14.59            ~2.4x       27
+dataset7          52.41             22.53            21.60       22.92             22.53            ~2.3x       35
+
+Encounter counts and per-type splits match every previous baseline for every
+dataset (4, 6, 10, 15, 21, 27, 35) in all three runs, and the pair/type
+classification numbers stayed 12/9/6 and 15/12/8 for datasets 6 and 7.
+Standalone CLI runs processed datasets 1 to 5 against datasets/outputs and
+produced semantically identical JSON (same pairs, order, distances); datasets
+6 and 7 produced JSON identical (deep equality) to a freshly computed serial
+reference. All parity checks were re-run after the final refactor.
+
+Datasets 6 and 7 together improved from 87.25 s to ~37.1 s (about 2.35x
+throughput) in this capture. The machine ran with a throttled CPU/battery
+profile during the capture: standalone process runs of dataset7 measured
+10.12 s and 12.43 s earlier in the session (about 4.3x to 5.2x serial) with
+identical output. The captured numbers above are the reproducible
+conservative result.

@@ -27,6 +27,11 @@ export {
   readDatasetGroupsWithExternalSort,
   readDatasetRecords,
 } from "./infrastructure/files/file-dataset-reader.js";
+export { analyzeDatasetParallel } from "./infrastructure/files/parallel-dataset-processor.js";
+export type {
+  ParallelDatasetAnalysis,
+  ParallelDatasetOptions,
+} from "./infrastructure/files/parallel-dataset-processor.js";
 export type { ExternalSortOptions } from "./infrastructure/files/external-timestamp-sorter.js";
 export { writeJsonOutput } from "./infrastructure/files/json-output-writer.js";
 export {

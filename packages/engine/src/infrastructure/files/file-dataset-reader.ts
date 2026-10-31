@@ -1,62 +1,18 @@
-import { createReadStream } from "node:fs";
-
 import { groupSortedByTimestamp } from "../../core/grouping/timestamp-grouper.js";
 import type { MonitoredPerson, Timestamp } from "../../domain.js";
 import {
   parseDatasetHeader,
   parseDatasetRow,
 } from "../parsers/dataset-parser.js";
+import { readLines } from "./dataset-line-reader.js";
 import { groupByExternalTimestampSort } from "./external-timestamp-sorter.js";
 import type { ExternalSortOptions } from "./external-timestamp-sorter.js";
-
-const NEWLINE_BYTE = 10;
-const STREAM_CHUNK_BYTES = 262_144;
-
-// Manual newline splitting avoids the per-line queue and promises of the
-// readline interface; chunks keep only the bytes of the current partial line.
-const readRawLines = async function* readRawLines(
-  filePath: string
-): AsyncGenerator<string> {
-  const input = createReadStream(filePath, {
-    highWaterMark: STREAM_CHUNK_BYTES,
-  });
-
-  try {
-    let pending: Buffer<ArrayBufferLike> = Buffer.alloc(0);
-
-    for await (const chunk of input) {
-      const bufferChunk = Buffer.isBuffer(chunk)
-        ? chunk
-        : Buffer.from(chunk as string);
-      pending =
-        pending.length === 0
-          ? bufferChunk
-          : Buffer.concat([pending, bufferChunk]);
-
-      let newlineIndex = pending.indexOf(NEWLINE_BYTE);
-      while (newlineIndex >= 0) {
-        const line = pending.subarray(0, newlineIndex).toString("utf-8");
-        pending = pending.subarray(newlineIndex + 1);
-        newlineIndex = pending.indexOf(NEWLINE_BYTE);
-        yield line.endsWith("\r") ? line.slice(0, -1) : line;
-      }
-    }
-
-    if (pending.length > 0) {
-      const line = pending.toString("utf-8");
-      yield line.endsWith("\r") ? line.slice(0, -1) : line;
-    }
-  } finally {
-    // Node destroys the stream when the generator closes before completion.
-    input.destroy();
-  }
-};
 
 export const readDatasetRecords = async function* readDatasetRecords(
   filePath: string
 ): AsyncGenerator<MonitoredPerson> {
   // A leitura por linha evita carregar o arquivo inteiro antes de começar o processamento.
-  const lines = readRawLines(filePath);
+  const lines = readLines(filePath);
   let lineNumber = 0;
   let hasHeader = false;
 
