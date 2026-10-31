@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import type { MonitoredPerson, Timestamp } from "../../domain.js";
 
+// Cabeçalho esperado pelo desafio: sete colunas separadas por ponto e vírgula.
 export const DATASET_HEADERS = [
   "idMonitorado",
   "faccaoMonitorado",
@@ -12,11 +13,16 @@ export const DATASET_HEADERS = [
   "idsRestricaoMedida",
 ] as const;
 
+// Padrões de validação usados tanto no caminho Zod quanto no caminho otimizado.
 const INTEGER_PATTERN = /^-?\d+$/u;
 const COORDINATE_PATTERN = /^-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/u;
 const TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/u;
 
+// Máximo de dias por mês (fevereiro é tratado separadamente para anos bissextos).
 const DAYS_IN_MONTH = [31, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31, 28];
+
+// O cache evita reexecutar a regex e a verificação de calendário para timestamps repetidos
+// (a maioria dos timestamps num dataset real aparece muitas vezes).
 const TIMESTAMP_CACHE_SIZE_LIMIT = 1_000_000;
 const validTimestampCache = new Set<string>();
 
@@ -31,8 +37,8 @@ const maximumDayOfMonth = (year: number, month: number): number => {
   return isLeapYear(year) ? 29 : 28;
 };
 
-// Accepts exactly the dates that the Date round-trip used to accept; the
-// pattern guarantees every checked position is a digit.
+// Valida o texto do timestamp verificando mês, dia e hora sem criar um objeto Date
+// (muito mais rápido para datasets com milhões de linhas).
 const isValidTimestampText = (value: string): boolean => {
   const year = Number(value.slice(0, 4));
   const month = Number(value.slice(5, 7));
@@ -53,8 +59,8 @@ const isValidTimestampText = (value: string): boolean => {
 };
 
 const isValidTimestamp = (value: string): boolean => {
-  // Verified timestamps dominate real datasets, so the cache skips both the
-  // regex and the calendar checks for repeated values.
+  // Timestamps verificados dominam os datasets reais; o cache evita tanto a
+  // regex quanto as verificações de calendário para valores repetidos.
   if (validTimestampCache.has(value)) {
     return true;
   }
@@ -69,6 +75,8 @@ const isValidTimestamp = (value: string): boolean => {
 
   return true;
 };
+
+// ── Schemas Zod usados pela API pública (parseDataset) ─────────────────────
 
 const integerSchema = z
   .string()
@@ -145,6 +153,7 @@ export const DatasetRowSchema = z
     }),
   );
 
+// Analisa uma linha no formato CSV delimitado por ponto e vírgula, com suporte a campos entre aspas.
 const parseDelimitedRecord = (line: string, lineNumber: number): string[] => {
   const fields: string[] = [];
   let field = "";
@@ -212,6 +221,8 @@ const describeIssues = (issues: readonly string[]): string => issues.join("; ");
 const SAFE_INTEGER_MINIMUM = Number.MIN_SAFE_INTEGER;
 const SAFE_INTEGER_MAXIMUM = Number.MAX_SAFE_INTEGER;
 
+// Analisa um campo inteiro e acumula erros no array `issues` em vez de lançar exceção,
+// permitindo relatar todos os problemas de uma linha em uma única mensagem.
 const requireIntegerField = (
   field: string | undefined,
   label: string,
@@ -308,6 +319,8 @@ const isBlankLine = (line: string): boolean => {
   return true;
 };
 
+// Valida a linha de cabeçalho do dataset; lança Error se as colunas não corresponderem ao esperado.
+// Remove o BOM (U+FEFF) que alguns editores inserem no início do arquivo.
 export const parseDatasetHeader = (line: string): void => {
   const [firstHeader, ...remainingHeaders] = parseDelimitedRecord(line, 1);
   const header = [firstHeader?.replace(/^\uFEFF/u, "") ?? "", ...remainingHeaders];
@@ -320,6 +333,8 @@ export const parseDatasetHeader = (line: string): void => {
   }
 };
 
+// Analisa uma linha de dados e retorna um MonitoredPerson, ou undefined para linhas em branco.
+// Lança Error se o número de campos ou algum valor for inválido.
 export const parseDatasetRow = (line: string, lineNumber: number): MonitoredPerson | undefined => {
   if (isBlankLine(line)) {
     return undefined;
@@ -370,6 +385,7 @@ export const parseDatasetRow = (line: string, lineNumber: number): MonitoredPers
   };
 };
 
+// Analisa um dataset completo a partir de uma string (usado para datasets pequenos em memória).
 export const parseDataset = (content: string): MonitoredPerson[] => {
   const [headerLine, ...recordLines] = content.split(/\r?\n/u);
 

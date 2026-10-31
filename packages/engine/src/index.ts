@@ -1,3 +1,7 @@
+// Ponto de entrada público do pacote engine.
+// Re-exporta todos os tipos de domínio, algoritmos e funções de infraestrutura
+// para uso pela CLI e por consumidores externos.
+
 export type {
   Coordinates,
   Encounter,

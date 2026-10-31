@@ -1,5 +1,6 @@
 import type { Encounter, EncounterCandidate, EncounterType } from "../../domain.js";
 
+// Verifica se algum dos participantes possui medida protetiva que restringe o outro.
 const isProtectiveEncounter = (candidate: EncounterCandidate): boolean => {
   const [first, second] = candidate.participants;
 
@@ -9,6 +10,8 @@ const isProtectiveEncounter = (candidate: EncounterCandidate): boolean => {
   );
 };
 
+// Classifica o tipo do encontro na ordem de precedência exigida pelo desafio:
+// protetiva > faccao > generico.
 const classifyEncounterType = (candidate: EncounterCandidate): EncounterType => {
   if (isProtectiveEncounter(candidate)) {
     return "protetiva";
@@ -22,17 +25,23 @@ const classifyEncounterType = (candidate: EncounterCandidate): EncounterType => 
   return "generico";
 };
 
+// Constrói o objeto de encontro com os campos na ordem exigida pelo desafio:
+// tipo, monitoradosEncontro, timestamp, posicoes, distanciaMetros.
 export const classifyEncounter = (candidate: EncounterCandidate): Encounter => {
   const [first, second] = candidate.participants;
 
+  // eslint-disable-next-line sort-keys
+  // biome-ignore format: Preserve property order
+  // oxlint-disable sort-keys
   return {
-    distanciaMetros: candidate.distanciaMetros,
+    tipo: classifyEncounterType(candidate),
     monitoradosEncontro: [first.id, second.id],
+    timestamp: candidate.timestamp,
     posicoes: {
       [first.id]: { lat: first.latitude, lon: first.longitude },
       [second.id]: { lat: second.latitude, lon: second.longitude },
     },
-    timestamp: candidate.timestamp,
-    tipo: classifyEncounterType(candidate),
+    distanciaMetros: candidate.distanciaMetros,
   };
+  // oxlint-enable sort-keys
 };

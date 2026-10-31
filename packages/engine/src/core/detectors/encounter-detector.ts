@@ -1,17 +1,25 @@
 import type { EncounterCandidate, MonitoredPerson, Timestamp } from "../../domain.js";
 import { calculateDistanceMeters, EARTH_RADIUS_METERS } from "../algorithms/haversine.js";
 
+// Distância limite (em metros) para configurar um encontro, conforme regra do desafio.
 export const MAX_ENCOUNTER_DISTANCE_METERS = 20;
 
+// Tamanho de cada célula do índice espacial. Um par a 20 m tem diferenças cartesianas
+// menores que 25 m, portanto células vizinhas sempre cobrem todos os candidatos reais.
 const SPATIAL_CELL_SIZE_METERS = 25;
+
+// Parâmetros do hash das células espaciais (módulo primo e multiplicador).
 const CELL_HASH_MODULUS = 4_294_967_291;
 const CELL_HASH_MULTIPLIER = 1_000_003;
+
+// Para grupos pequenos a varredura naïve de todos os pares é mais rápida do que
+// montar o índice espacial e percorrer as 27 células vizinhas.
 const NAIVE_PAIR_THRESHOLD = 40;
 
-// Great-circle distance d and the 3-D chord c between two points on the sphere
-// satisfy d = 2·R·asin(c / (2·R)). Floating-point noise is bounded by ~1e-8 m,
-// so pairs beyond the verify band skip the haversine formula, and pairs inside
-// the band still get the exact decision that the haversine comparison gives.
+// A distância de grande-círculo d e a corda 3-D c entre dois pontos na esfera
+// satisfazem d = 2·R·asin(c / (2·R)). O ruído de ponto flutuante é limitado a ~1e-8 m,
+// portanto pares além da faixa de verificação ignoram a fórmula de Haversine, e pares
+// dentro da faixa ainda recebem a decisão exata que a comparação de Haversine daria.
 const CHORD_LIMIT_METERS =
   2 * EARTH_RADIUS_METERS * Math.sin(MAX_ENCOUNTER_DISTANCE_METERS / (2 * EARTH_RADIUS_METERS));
 const CHORD_VERIFY_SQUARED_METERS = (CHORD_LIMIT_METERS + 1e-3) ** 2;
@@ -19,9 +27,11 @@ const CHORD_VERIFY_SQUARED_METERS = (CHORD_LIMIT_METERS + 1e-3) ** 2;
 type TimestampGroup = readonly [Timestamp, readonly MonitoredPerson[]];
 type TimestampGroups = AsyncIterable<TimestampGroup> | Iterable<TimestampGroup>;
 
+// Gera uma chave canônica para o par (sem importar a ordem dos IDs), garantindo unicidade.
 const pairKey = (firstId: number, secondId: number): string =>
   firstId < secondId ? `${firstId}:${secondId}` : `${secondId}:${firstId}`;
 
+// Entrada do índice espacial: coordenadas cartesianas ECEF e célula do hash.
 interface SpatialEntry {
   cellX: number;
   cellY: number;
@@ -32,6 +42,8 @@ interface SpatialEntry {
   index: number;
 }
 
+// Converte as coordenadas geográficas de um monitorado para o sistema ECEF (Earth-Centered,
+// Earth-Fixed) e calcula a célula do índice espacial correspondente.
 const getSpatialEntry = (person: MonitoredPerson, index: number): SpatialEntry => {
   const latitude = (person.latitude * Math.PI) / 180;
   const longitude = (person.longitude * Math.PI) / 180;
@@ -40,7 +52,7 @@ const getSpatialEntry = (person: MonitoredPerson, index: number): SpatialEntry =
   const positionY = latitudeRadius * Math.sin(longitude);
   const positionZ = EARTH_RADIUS_METERS * Math.sin(latitude);
 
-  // A pair within 20 m has Cartesian coordinate differences below the 25 m cell size.
+  // Um par a menos de 20 m tem diferenças de coordenadas cartesianas abaixo do tamanho de célula de 25 m.
   return {
     cellX: Math.floor(positionX / SPATIAL_CELL_SIZE_METERS),
     cellY: Math.floor(positionY / SPATIAL_CELL_SIZE_METERS),
@@ -52,18 +64,22 @@ const getSpatialEntry = (person: MonitoredPerson, index: number): SpatialEntry =
   };
 };
 
+// Gera um hash inteiro para uma célula do índice espacial a partir de suas coordenadas discretas.
 const hashCell = (cellX: number, cellY: number, cellZ: number): number => {
   let hash = ((cellX % CELL_HASH_MODULUS) + CELL_HASH_MODULUS) % CELL_HASH_MODULUS;
   hash = (hash * CELL_HASH_MULTIPLIER + cellY) % CELL_HASH_MODULUS;
   return (hash * CELL_HASH_MULTIPLIER + cellZ) % CELL_HASH_MODULUS;
 };
 
+// Percorre as 27 células vizinhas (3×3×3) ao redor da célula da primeira entrada e
+// coleta os índices de todos os candidatos que compartilham células adjacentes.
+// Colisões de hash apenas aumentam o trabalho; a verificação exata da célula descarta
+// candidatos que não são vizinhos reais.
 const findCandidateIndexes = (
   firstEntry: SpatialEntry,
   spatialIndex: Map<number, SpatialEntry[]>,
   candidateIndexes: number[],
 ): void => {
-  // Hash collisions only add work; exact cell checks discard non-neighboring candidates.
   for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
     for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
       for (let offsetZ = -1; offsetZ <= 1; offsetZ += 1) {
@@ -85,8 +101,8 @@ const findCandidateIndexes = (
             Math.abs(candidate.cellY - firstEntry.cellY) <= 1 &&
             Math.abs(candidate.cellZ - firstEntry.cellZ) <= 1
           ) {
-            // Duplicate detections from hash collisions stay safe: the pair
-            // key set discards repeated encounters.
+            // Duplicatas de colisões de hash são seguras: o conjunto de chaves de par
+            // descarta encontros repetidos.
             candidateIndexes.push(candidate.index);
           }
         }
@@ -95,6 +111,9 @@ const findCandidateIndexes = (
   }
 };
 
+// Verifica se o par (first, second) forma um encontro válido (distância < 20 m),
+// usando o gate de corda ECEF como filtro rápido antes da Haversine.
+// Retorna a distância em metros ou undefined se o par não forma encontro.
 const considerEncounter = (
   first: MonitoredPerson,
   firstEntry: SpatialEntry,
@@ -111,6 +130,7 @@ const considerEncounter = (
     return undefined;
   }
 
+  // Gate de corda 3-D: descarta pares cuja corda excede o limite derivado de 20 m.
   const positionDifferenceX = secondEntry.positionX - firstEntry.positionX;
   const positionDifferenceY = secondEntry.positionY - firstEntry.positionY;
   const positionDifferenceZ = secondEntry.positionZ - firstEntry.positionZ;
@@ -123,6 +143,7 @@ const considerEncounter = (
     return undefined;
   }
 
+  // Apenas pares que passaram pelo gate chegam ao cálculo exato de Haversine.
   const distanciaMetros = calculateDistanceMeters(
     { lat: first.latitude, lon: first.longitude },
     { lat: second.latitude, lon: second.longitude },
@@ -136,6 +157,7 @@ const considerEncounter = (
   return distanciaMetros;
 };
 
+// Valida que todos os registros do grupo pertencem ao timestamp declarado.
 const validateGroupTimestamps = (
   timestamp: Timestamp,
   people: readonly MonitoredPerson[],
@@ -149,6 +171,8 @@ const validateGroupTimestamps = (
   }
 };
 
+// Detecta todos os encontros em um único grupo de timestamp.
+// Para grupos pequenos usa varredura naïve; para grupos grandes usa o índice espacial de hash.
 export const detectEncountersInGroup = function* detectEncountersInGroup(
   timestamp: Timestamp,
   people: readonly MonitoredPerson[],
@@ -161,8 +185,7 @@ export const detectEncountersInGroup = function* detectEncountersInGroup(
   const detectedPairs = new Set<string>();
   const spatialEntries = people.map(getSpatialEntry);
 
-  // Naive pairwise checking beats the 27-neighbor-cell bookkeeping below for
-  // small groups.
+  // Varredura naïve de pares: mais eficiente que o índice espacial para grupos pequenos.
   if (people.length < NAIVE_PAIR_THRESHOLD) {
     for (let firstIndex = 0; firstIndex < people.length; firstIndex += 1) {
       const first = people[firstIndex];
@@ -194,6 +217,8 @@ export const detectEncountersInGroup = function* detectEncountersInGroup(
     return;
   }
 
+  // Índice espacial de hash: agrupa entradas por célula para restringir as comparações
+  // de distância apenas aos vizinhos próximos.
   const spatialIndex = new Map<number, SpatialEntry[]>();
 
   for (const entry of spatialEntries) {
@@ -219,16 +244,15 @@ export const detectEncountersInGroup = function* detectEncountersInGroup(
 
     findCandidateIndexes(firstEntry, spatialIndex, candidateIndexes);
 
-    // Single candidates need no ordering; larger lists sort to keep the same
-    // encounter order as the previous baseline (ascending pair indexes).
+    // Candidatos únicos não precisam de ordenação; listas maiores são ordenadas para
+    // manter a mesma ordem de encontros do caminho naïve (pares em ordem crescente de índice).
     if (candidateIndexes.length > 1) {
       candidateIndexes.sort(
         (firstCandidateIndex, secondCandidateIndex) => firstCandidateIndex - secondCandidateIndex,
       );
     }
 
-    // Duplicate indexes from hash collisions are harmless: considerEncounter
-    // discards repeated pairs.
+    // Duplicatas de colisões de hash são inofensivas: considerEncounter descarta pares repetidos.
     for (const secondIndex of candidateIndexes) {
       const second = people[secondIndex];
       const secondEntry = spatialEntries[secondIndex];
@@ -250,6 +274,7 @@ export const detectEncountersInGroup = function* detectEncountersInGroup(
   }
 };
 
+// Detecta encontros em todos os grupos de timestamps fornecidos como iterável ou async iterável.
 export const detectEncounters = async function* detectEncounters(
   groups: TimestampGroups,
 ): AsyncGenerator<EncounterCandidate> {

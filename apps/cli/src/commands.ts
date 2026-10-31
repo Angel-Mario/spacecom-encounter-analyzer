@@ -10,6 +10,7 @@ import {
 import type { UnsortedStrategy } from "./application.js";
 import { ENV } from "./env.js";
 
+// Opções internas derivadas do parsing dos argumentos da linha de comando.
 interface CliOptions {
   command: "process" | "process-all" | "benchmark" | "help";
   datasetPath?: string;
@@ -41,6 +42,8 @@ const readOptionValue = (args: string[], index: number, option: string): string 
 const isCommand = (value: string): value is CliOptions["command"] =>
   value === "process" || value === "process-all" || value === "benchmark";
 
+// Analisa os argumentos da linha de comando e retorna as opções da CLI.
+// Lança Error se um comando ou opção desconhecida for fornecida.
 export const parseArguments = (args: string[]): CliOptions => {
   const [commandArgument, ...remainingArguments] = args;
   if (!commandArgument || commandArgument === "--help" || commandArgument === "-h") {
@@ -144,6 +147,8 @@ const throwMissingDatasetPath = (): never => {
   throw new Error("The process command requires a dataset file path.");
 };
 
+// Executa o comando solicitado: process, process-all, benchmark ou help.
+// Processa os datasets em sequência para que as métricas de cada um sejam precisas.
 export const runCommand = async (args: string[]): Promise<void> => {
   const options = parseArguments(args);
   if (options.command === "help") {

@@ -13,6 +13,8 @@ import {
 } from "@spacecom-encounter-analyzer/engine";
 import type { Encounter, MonitoredPerson, Timestamp } from "@spacecom-encounter-analyzer/engine";
 
+// Estratégia a usar quando timestamps estão fora de ordem:
+// "prompt" → pergunta ao usuário; "external" → ordena em disco; "cancel" → aborta.
 export type UnsortedStrategy = "prompt" | "external" | "cancel";
 
 const WORKSPACE_ROOT = path.resolve(import.meta.dirname, "../../..");
@@ -40,6 +42,8 @@ interface ProcessingResult {
   timestamps: number;
 }
 
+// Itera sobre todos os grupos de timestamp, detecta e classifica encontros,
+// e acumula contadores de registros, timestamps e encontros detectados.
 const collectResults = async (
   groups: AsyncIterable<readonly [Timestamp, readonly MonitoredPerson[]]>,
 ): Promise<ProcessingResult> => {
@@ -151,6 +155,8 @@ export const processDataset = async (
   return summary;
 };
 
+// Lista todos os arquivos .txt do diretório de entrada, ordenados pelo nome.
+// Lança Error se nenhum arquivo for encontrado.
 export const listDatasetFiles = async (inputDirectory: string): Promise<string[]> => {
   const directoryEntries = await readdir(inputDirectory, {
     withFileTypes: true,
@@ -170,6 +176,8 @@ export const listDatasetFiles = async (inputDirectory: string): Promise<string[]
 export const resolveWorkspacePath = (filePath: string): string =>
   path.isAbsolute(filePath) ? filePath : path.resolve(WORKSPACE_ROOT, filePath);
 
+// Deriva o caminho de saída padrão a partir do nome do dataset:
+// "dataset1.txt" → "respostas1.json"; outros nomes → "<nome>.json".
 export const getDefaultOutputPath = (datasetPath: string, outputDirectory: string): string => {
   const datasetName = path.basename(datasetPath, path.extname(datasetPath));
   const datasetNumber = /^dataset(?<number>\d+)$/iu.exec(datasetName)?.groups?.number;
@@ -177,6 +185,7 @@ export const getDefaultOutputPath = (datasetPath: string, outputDirectory: strin
   return path.join(outputDirectory, outputName);
 };
 
+// Formata o resumo de um dataset processado para exibição no terminal.
 export const formatDatasetSummary = (summary: DatasetSummary): string => {
   const counts = {
     faccao: summary.encounters.filter((encounter) => encounter.tipo === "faccao").length,

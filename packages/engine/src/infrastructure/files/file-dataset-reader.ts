@@ -5,10 +5,11 @@ import { readLines } from "./dataset-line-reader.js";
 import { groupByExternalTimestampSort } from "./external-timestamp-sorter.js";
 import type { ExternalSortOptions } from "./external-timestamp-sorter.js";
 
+// Lê o arquivo linha a linha e emite um MonitoredPerson por registro válido.
+// A leitura em stream evita carregar o arquivo inteiro antes de começar o processamento.
 export const readDatasetRecords = async function* readDatasetRecords(
   filePath: string,
 ): AsyncGenerator<MonitoredPerson> {
-  // A leitura por linha evita carregar o arquivo inteiro antes de começar o processamento.
   const lines = readLines(filePath);
   let lineNumber = 0;
   let hasHeader = false;
@@ -33,8 +34,10 @@ export const readDatasetRecords = async function* readDatasetRecords(
   }
 };
 
+// Lê todos os registros do arquivo e retorna um array em memória.
+// Conveniente para datasets pequenos; para datasets grandes prefira readDatasetRecords
+// ou readDatasetGroups para evitar excesso de uso de memória.
 export const readDatasetFile = async (filePath: string): Promise<MonitoredPerson[]> => {
-  // Esta opção é conveniente para datasets pequenos, mas mantém todos os registros na memória.
   const people: MonitoredPerson[] = [];
 
   for await (const person of readDatasetRecords(filePath)) {
@@ -44,17 +47,20 @@ export const readDatasetFile = async (filePath: string): Promise<MonitoredPerson
   return people;
 };
 
+// Lê e agrupa os registros por timestamp, assumindo que o arquivo já está ordenado.
+// Lança UnsortedTimestampsError se a ordem crescente de timestamps for violada.
+// Use esta rota quando os registros já estiverem ordenados por timestamp.
 export const readDatasetGroups = async function* readDatasetGroups(
   filePath: string,
 ): AsyncGenerator<[Timestamp, MonitoredPerson[]]> {
-  // Use esta rota quando os registros já estiverem ordenados por timestamp.
   yield* groupSortedByTimestamp(readDatasetRecords(filePath));
 };
 
+// Lê e agrupa os registros por timestamp usando ordenação externa em disco,
+// suportando arquivos grandes com timestamps fora de ordem sem carregar tudo na memória.
 export const readDatasetGroupsWithExternalSort = async function* readDatasetGroupsWithExternalSort(
   filePath: string,
   options?: ExternalSortOptions,
 ): AsyncGenerator<[Timestamp, MonitoredPerson[]]> {
-  // O ordenamento externo permite agrupar arquivos grandes mesmo quando os timestamps estão fora de ordem.
   yield* groupByExternalTimestampSort(readDatasetRecords(filePath), options);
 };
