@@ -1,0 +1,55 @@
+Spacecom Encounter Analyzer - CPU profile after the CPU optimizations
+
+Dataset: dataset7.txt
+Records: 12,000,000
+Timestamp groups: 50,001 (240 records per group, one single-record group)
+Profiled run: 54.73 s (Node CPU profiler enabled)
+CPU samples: 54.79 s sampled
+Command:
+  node --cpu-prof --cpu-prof-dir="<temporary-profile-directory>" apps/cli/dist/index.mjs process datasets/inputs/dataset7.txt --output "<temporary-output-directory>"
+
+Top sampled self time (approximate; V8 CPU sampling):
+
+Area / function                                      Time       Share
+detectEncountersInGroup (pair loops, yields)         21.82 s     39.8%
+parseDelimitedRecord                                 4.76 s      8.7%
+findCandidateIndexes                                 3.20 s      5.8%
+collectResults (CLI aggregation loop)                3.19 s      5.8%
+parseDatasetRow (field dispatch)                     2.96 s      5.4%
+runMicrotasks (async iterator plumbing)              2.48 s      4.5%
+requireCoordinateField                               1.89 s      3.5%
+utf8Slice (line bytes to string)                     1.75 s      3.2%
+groupSortedByTimestamp                               1.65 s      3.0%
+readRawLines (chunk split loop)                      1.47 s      2.7%
+readDatasetRecords                                   1.08 s      2.0%
+isValidTimestamp (cached timestamp path)             1.06 s      1.9%
+requireIntegerField                                  1.00 s      1.8%
+module anonymous functions                           0.70 s      1.3%
+getSpatialEntry                                      0.63 s      1.1%
+FastBuffer (buffer slicing)                          0.56 s      1.0%
+Coordinate regex                                     0.56 s      1.0%
+Garbage collector                                    0.50 s      0.9%
+
+Interpretation:
+- The Date-based timestamp refinement that used to cost 21.2% of sampled CPU
+  is gone; the whole timestamp check now fits inside isValidTimestamp at 1.9%
+  because repeated values hit the value cache before the regex.
+- The Zod row runner (6.0%) and Zod parsing (4.9%) are gone; row validation
+  costs about 10% spread across parseDatasetRow and the per-field helpers,
+  most of it in the coordinate and integer regex checks.
+- The haversine formula no longer appears as a hotspot: the chord gate skips
+  it for candidate pairs beyond 20.0011 m and the reported encounter
+  distances still come from the exact haversine output.
+- detectEncountersInGroup self time (39.8%) covers the generator frame with
+  the pair loop, the chord gate and candidate bookkeeping inlined by V8.
+  Detection at 240 records per group is now roughly half the process CPU.
+- The async iterator chain (runMicrotasks at 4.5% plus the generator frames)
+  and the line-to-string conversion (utf8Slice at 3.2%) are the next
+  bounded-cost items; parseDelimitedRecord at 8.7% remains the largest
+  parser cost.
+- The same bounded-benefit reasoning for a detection-only worker pool from
+  the previous profile still holds; the biggest remaining lever is
+  pipelining or parallelizing parse plus detection across worker pools.
+
+The profiler output was kept in the system temporary directory; no profile
+binaries or generated encounter output were added to the repository.

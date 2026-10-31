@@ -16,11 +16,67 @@ const INTEGER_PATTERN = /^-?\d+$/u;
 const COORDINATE_PATTERN = /^-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/u;
 const TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/u;
 
+const DAYS_IN_MONTH = [31, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31, 28];
+const TIMESTAMP_CACHE_SIZE_LIMIT = 1_000_000;
+const validTimestampCache = new Set<string>();
+
+const isLeapYear = (year: number): boolean =>
+  (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+
+const maximumDayOfMonth = (year: number, month: number): number => {
+  if (month !== 2) {
+    return DAYS_IN_MONTH[month - 1] ?? 0;
+  }
+
+  return isLeapYear(year) ? 29 : 28;
+};
+
+// Accepts exactly the dates that the Date round-trip used to accept; the
+// pattern guarantees every checked position is a digit.
+const isValidTimestampText = (value: string): boolean => {
+  const year = Number(value.slice(0, 4));
+  const month = Number(value.slice(5, 7));
+  const day = Number(value.slice(8, 10));
+  const hour = Number(value.slice(11, 13));
+  const minute = Number(value.slice(14, 16));
+  const second = Number(value.slice(17, 19));
+
+  if (month < 1 || month > 12) {
+    return false;
+  }
+
+  if (day < 1 || day > maximumDayOfMonth(year, month)) {
+    return false;
+  }
+
+  return hour <= 23 && minute <= 59 && second <= 59;
+};
+
+const isValidTimestamp = (value: string): boolean => {
+  // Verified timestamps dominate real datasets, so the cache skips both the
+  // regex and the calendar checks for repeated values.
+  if (validTimestampCache.has(value)) {
+    return true;
+  }
+
+  if (!TIMESTAMP_PATTERN.test(value) || !isValidTimestampText(value)) {
+    return false;
+  }
+
+  if (validTimestampCache.size < TIMESTAMP_CACHE_SIZE_LIMIT) {
+    validTimestampCache.add(value);
+  }
+
+  return true;
+};
+
 const integerSchema = z
   .string()
   .regex(INTEGER_PATTERN, "Must be an integer")
   .transform(Number)
-  .pipe(z.number().int().min(Number.MIN_SAFE_INTEGER).max(Number.MAX_SAFE_INTEGER));
+  .pipe(
+    z.number().int().min(Number.MIN_SAFE_INTEGER).max(Number.MAX_SAFE_INTEGER)
+  );
 
 const factionSchema = z
   .union([z.literal(""), integerSchema])
@@ -32,7 +88,8 @@ const timestampSchema = z
   .refine((value) => {
     const date = new Date(`${value.replace(" ", "T")}Z`);
     return (
-      Number.isFinite(date.getTime()) && date.toISOString().slice(0, 19).replace("T", " ") === value
+      Number.isFinite(date.getTime()) &&
+      date.toISOString().slice(0, 19).replace("T", " ") === value
     );
   }, "Must be a valid date and time")
   .transform((value): Timestamp => value);
@@ -44,11 +101,15 @@ const coordinateSchema = (minimum: number, maximum: number) =>
     .transform(Number)
     .pipe(z.number().min(minimum).max(maximum));
 
-const protectiveMeasureSchema = z.enum(["true", "false"]).transform((value) => value === "true");
+const protectiveMeasureSchema = z
+  .enum(["true", "false"])
+  .transform((value) => value === "true");
 
 const restrictedIdsSchema = z
   .string()
-  .transform((value) => (value === "" ? [] : value.split(",").map((id) => id.trim())))
+  .transform((value) =>
+    value === "" ? [] : value.split(",").map((id) => id.trim())
+  )
   .pipe(z.array(integerSchema));
 
 export const DatasetHeadersSchema = z.tuple([
@@ -88,7 +149,7 @@ export const DatasetRowSchema = z
       longitude,
       restrictedIds: idsRestricaoMedida,
       timestamp,
-    }),
+    })
   );
 
 const parseDelimitedRecord = (line: string, lineNumber: number): string[] => {
@@ -153,38 +214,154 @@ const parseDelimitedRecord = (line: string, lineNumber: number): string[] => {
   return fields;
 };
 
-const describeIssues = (error: z.ZodError): string =>
-  error.issues
-    .map((issue) => {
-      const field = issue.path.length > 0 ? `${issue.path.join(".")}: ` : "";
-      return `${field}${issue.message}`;
-    })
-    .join("; ");
+const describeIssues = (issues: readonly string[]): string => issues.join("; ");
+
+const SAFE_INTEGER_MINIMUM = Number.MIN_SAFE_INTEGER;
+const SAFE_INTEGER_MAXIMUM = Number.MAX_SAFE_INTEGER;
+
+const requireIntegerField = (
+  field: string | undefined,
+  label: string,
+  issues: string[]
+): number => {
+  if (field === undefined || !INTEGER_PATTERN.test(field)) {
+    issues.push(`${label}: Must be an integer`);
+    return Number.NaN;
+  }
+
+  const parsed = Number(field);
+  if (!Number.isSafeInteger(parsed)) {
+    issues.push(
+      `${label}: expected integer between ${SAFE_INTEGER_MINIMUM} and ${SAFE_INTEGER_MAXIMUM}`
+    );
+    return Number.NaN;
+  }
+
+  return parsed;
+};
+
+const requireCoordinateField = (
+  field: string | undefined,
+  minimum: number,
+  maximum: number,
+  label: string,
+  issues: string[]
+): number => {
+  if (field === undefined || !COORDINATE_PATTERN.test(field)) {
+    issues.push(`${label}: Must be a decimal number`);
+    return Number.NaN;
+  }
+
+  const parsed = Number(field);
+  if (parsed < minimum || parsed > maximum) {
+    issues.push(`${label}: expected number between ${minimum} and ${maximum}`);
+  }
+
+  return parsed;
+};
+
+const requireProtectiveMeasureField = (
+  field: string | undefined,
+  issues: string[]
+): boolean => {
+  if (field === "true") {
+    return true;
+  }
+
+  if (field === "false") {
+    return false;
+  }
+
+  issues.push(`medidaProtetiva: expected "true" or "false"`);
+  return false;
+};
+
+const requireTimestampField = (
+  field: string | undefined,
+  issues: string[]
+): Timestamp => {
+  if (field !== undefined && isValidTimestamp(field)) {
+    return field;
+  }
+
+  if (field === undefined || !TIMESTAMP_PATTERN.test(field)) {
+    issues.push("timestamp: Must use the format YYYY-MM-DD HH:MM:SS");
+    return field ?? "";
+  }
+
+  issues.push("timestamp: Must be a valid date and time");
+  return field;
+};
+
+const parseRestrictedIdsField = (
+  field: string | undefined,
+  issues: string[]
+): number[] => {
+  if (field === undefined || field === "") {
+    return [];
+  }
+
+  const parts = field.split(",");
+  const ids: number[] = [];
+
+  for (const [index, part] of parts.entries()) {
+    const parsed = requireIntegerField(
+      part.trim(),
+      `idsRestricaoMedida.${index}`,
+      issues
+    );
+    if (Number.isSafeInteger(parsed)) {
+      ids.push(parsed);
+    }
+  }
+
+  return ids;
+};
+
+const isBlankLine = (line: string): boolean => {
+  for (const character of line) {
+    if (character.trim() !== "") {
+      return false;
+    }
+  }
+
+  return true;
+};
 
 export const parseDatasetHeader = (line: string): void => {
   const [firstHeader, ...remainingHeaders] = parseDelimitedRecord(line, 1);
-  const header = [firstHeader?.replace(/^\uFEFF/u, "") ?? "", ...remainingHeaders];
+  const header = [
+    firstHeader?.replace(/^\uFEFF/u, "") ?? "",
+    ...remainingHeaders,
+  ];
   const parsedHeader = DatasetHeadersSchema.safeParse(header);
 
   if (!parsedHeader.success) {
-    throw new Error(`Invalid dataset header: expected ${DATASET_HEADERS.join(";")}`, {
-      cause: parsedHeader.error,
-    });
+    throw new Error(
+      `Invalid dataset header: expected ${DATASET_HEADERS.join(";")}`,
+      {
+        cause: parsedHeader.error,
+      }
+    );
   }
 };
 
-export const parseDatasetRow = (line: string, lineNumber: number): MonitoredPerson | undefined => {
-  if (line.trim() === "") {
+export const parseDatasetRow = (
+  line: string,
+  lineNumber: number
+): MonitoredPerson | undefined => {
+  if (isBlankLine(line)) {
     return undefined;
   }
 
   const fields = parseDelimitedRecord(line, lineNumber);
   if (fields.length !== DATASET_HEADERS.length) {
     throw new Error(
-      `Invalid dataset row ${lineNumber}: expected ${DATASET_HEADERS.length} fields, received ${fields.length}`,
+      `Invalid dataset row ${lineNumber}: expected ${DATASET_HEADERS.length} fields, received ${fields.length}`
     );
   }
 
+  // The length check above keeps every destructured field defined.
   const [
     idMonitorado,
     faccaoMonitorado,
@@ -194,23 +371,49 @@ export const parseDatasetRow = (line: string, lineNumber: number): MonitoredPers
     medidaProtetiva,
     idsRestricaoMedida,
   ] = fields;
-  const parsedRecord = DatasetRowSchema.safeParse({
-    faccaoMonitorado,
-    idMonitorado,
-    idsRestricaoMedida,
-    latitude,
-    longitude,
-    medidaProtetiva,
-    timestamp,
-  });
 
-  if (!parsedRecord.success) {
-    throw new Error(`Invalid dataset row ${lineNumber}: ${describeIssues(parsedRecord.error)}`, {
-      cause: parsedRecord.error,
-    });
+  const issues: string[] = [];
+  const factionId =
+    faccaoMonitorado === ""
+      ? null
+      : requireIntegerField(faccaoMonitorado, "faccaoMonitorado", issues);
+  const id = requireIntegerField(idMonitorado, "idMonitorado", issues);
+  const restrictedIds = parseRestrictedIdsField(idsRestricaoMedida, issues);
+  const parsedLatitude = requireCoordinateField(
+    latitude,
+    -90,
+    90,
+    "latitude",
+    issues
+  );
+  const parsedLongitude = requireCoordinateField(
+    longitude,
+    -180,
+    180,
+    "longitude",
+    issues
+  );
+  const hasProtectiveMeasure = requireProtectiveMeasureField(
+    medidaProtetiva,
+    issues
+  );
+  const parsedTimestamp = requireTimestampField(timestamp, issues);
+
+  if (issues.length > 0) {
+    throw new Error(
+      `Invalid dataset row ${lineNumber}: ${describeIssues(issues)}`
+    );
   }
 
-  return parsedRecord.data;
+  return {
+    factionId,
+    hasProtectiveMeasure,
+    id,
+    latitude: parsedLatitude,
+    longitude: parsedLongitude,
+    restrictedIds,
+    timestamp: parsedTimestamp,
+  };
 };
 
 export const parseDataset = (content: string): MonitoredPerson[] => {

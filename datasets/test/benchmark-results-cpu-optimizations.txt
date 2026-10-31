@@ -1,0 +1,140 @@
+﻿SPACECOM ENCOUNTER ANALYZER
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+Dataset: dataset1.txt
+
+Records processed:       5,000
+Unique timestamps:       500
+
+Encounters detected:     4
+
+Generic encounters:      2
+Faction encounters:      1
+Protective encounters:   1
+
+Execution time:          0.03 s
+Heap used:               7.6 MB
+Memory (RSS):            51.6 MB
+
+Status: SUCCESS
+
+SPACECOM ENCOUNTER ANALYZER
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+Dataset: dataset2.txt
+
+Records processed:       25,000
+Unique timestamps:       1,250
+
+Encounters detected:     6
+
+Generic encounters:      3
+Faction encounters:      2
+Protective encounters:   1
+
+Execution time:          0.09 s
+Heap used:               9.0 MB
+Memory (RSS):            59.0 MB
+
+Status: SUCCESS
+
+SPACECOM ENCOUNTER ANALYZER
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+Dataset: dataset3.txt
+
+Records processed:       100,000
+Unique timestamps:       2,500
+
+Encounters detected:     10
+
+Generic encounters:      5
+Faction encounters:      3
+Protective encounters:   2
+
+Execution time:          0.49 s
+Heap used:               16.9 MB
+Memory (RSS):            96.5 MB
+
+Status: SUCCESS
+
+SPACECOM ENCOUNTER ANALYZER
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+Dataset: dataset4.txt
+
+Records processed:       400,020
+Unique timestamps:       6,667
+
+Encounters detected:     15
+
+Generic encounters:      7
+Faction encounters:      5
+Protective encounters:   3
+
+Execution time:          1.82 s
+Heap used:               16.3 MB
+Memory (RSS):            118.5 MB
+
+Status: SUCCESS
+
+SPACECOM ENCOUNTER ANALYZER
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+Dataset: dataset5.txt
+
+Records processed:       1,000,000
+Unique timestamps:       12,500
+
+Encounters detected:     21
+
+Generic encounters:      10
+Faction encounters:      7
+Protective encounters:   4
+
+Execution time:          4.34 s
+Heap used:               33.0 MB
+Memory (RSS):            127.3 MB
+
+Status: SUCCESS
+
+SPACECOM ENCOUNTER ANALYZER
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+Dataset: dataset6.txt
+
+Records processed:       8,000,000
+Unique timestamps:       80,000
+
+Encounters detected:     27
+
+Generic encounters:      12
+Faction encounters:      9
+Protective encounters:   6
+
+Execution time:          34.84 s
+Heap used:               65.0 MB
+Memory (RSS):            199.4 MB
+
+Status: SUCCESS
+
+SPACECOM ENCOUNTER ANALYZER
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+Dataset: dataset7.txt
+
+Records processed:       12,000,000
+Unique timestamps:       100,000
+
+Encounters detected:     35
+
+Generic encounters:      15
+Faction encounters:      12
+Protective encounters:   8
+
+Execution time:          52.41 s
+Heap used:               36.1 MB
+Memory (RSS):            199.0 MB
+
+Status: SUCCESS
+

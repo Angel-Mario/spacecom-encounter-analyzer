@@ -1,0 +1,40 @@
+Spacecom Encounter Analyzer - CPU optimization benchmark
+
+Previous baseline: benchmark-results-pre-optimizations.txt
+Spatial index run: benchmark-results-spatial-index.txt
+Current run: benchmark-results-cpu-optimizations.txt
+Current run command: node apps/cli/dist/index.mjs benchmark
+
+The current run keeps the spatial index and adds: value-cached timestamp
+validation, direct positional row validation without the per-row Zod object,
+an ECEF chord gate that skips the haversine formula for distant candidate
+pairs, a per-group sync generator for detection, and a manual line reader
+that replaces the readline interface.
+
+Dataset    Pre-opt (s)   Spatial index (s)   CPU optimizations (s)   vs pre-opt   vs spatial   Encounters
+dataset1          0.08               0.08                    0.03
+dataset2          0.26               0.29                    0.09
+dataset3          1.08               0.99                    0.49
+dataset4          4.43               3.82                    1.82
+dataset5         12.20               9.50                    4.34
+dataset6        105.59              75.47                   34.84
+dataset7        191.23             115.50                   52.41
+
+Encounter counts and per-type splits match the baseline for every dataset
+(4, 6, 10, 15, 21, 27, 35). Datasets 1 to 5 also produce the same JSON
+encounters (same pairs, order, distances) as the previous version.
+
+Datasets 6 and 7 together improved from 190.97 s to 87.25 s: 54.3% less
+processing time against the spatial index version (about 2.19x throughput)
+and 70.6% less against the original baseline (about 3.40x). Dataset 7 alone
+improved from 115.50 s to 52.41 s (about 2.21x against the spatial index run)
+and dataset 6 from 75.47 s to 34.84 s (about 2.17x).
+
+Repeatability: two additional full runs measured datasets 6 and 7 together at
+90.79 s and 91.40 s, so single-run variance is around 3%. Heap usage stays
+near 7-38 MB; RSS stays under 200 MB per dataset, and dataset 6 no longer
+shows the heap growth seen in the previous spatial-index run.
+
+The remaining per-RSS difference between datasets (51-200 MB) tracks the
+Node.js runtime baseline plus streamed group buffers, and is unchanged in
+shape from the previous version.
