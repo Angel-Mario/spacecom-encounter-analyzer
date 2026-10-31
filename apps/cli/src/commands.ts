@@ -1,0 +1,166 @@
+import path from "node:path";
+
+import {
+  formatDatasetSummary,
+  getDefaultOutputPath,
+  listDatasetFiles,
+  processDataset,
+  resolveWorkspacePath,
+} from "./application.js";
+import type { UnsortedStrategy } from "./application.js";
+
+interface CliOptions {
+  command: "process" | "process-all" | "benchmark" | "help";
+  datasetPath?: string;
+  inputDirectory: string;
+  outputDirectory: string;
+  unsortedStrategy: UnsortedStrategy;
+}
+
+const DEFAULT_INPUT_DIRECTORY = path.join("datasets", "inputs");
+const DEFAULT_OUTPUT_DIRECTORY = path.join("datasets", "outputs");
+
+const readOptionValue = (args: string[], index: number, option: string): string => {
+  const value = args[index + 1];
+  if (!value || value.startsWith("--")) {
+    throw new Error(`Option ${option} requires a value.`);
+  }
+
+  return value;
+};
+
+const parseUnsortedStrategy = (value: string): UnsortedStrategy => {
+  if (value === "prompt" || value === "external" || value === "cancel") {
+    return value;
+  }
+
+  throw new Error(`Invalid --unsorted value "${value}". Use prompt, external, or cancel.`);
+};
+
+const isCommand = (value: string): value is CliOptions["command"] =>
+  value === "process" || value === "process-all" || value === "benchmark";
+
+export const parseArguments = (args: string[]): CliOptions => {
+  const [commandArgument, ...remainingArguments] = args;
+  if (!commandArgument || commandArgument === "--help" || commandArgument === "-h") {
+    return {
+      command: "help",
+      inputDirectory: DEFAULT_INPUT_DIRECTORY,
+      outputDirectory: DEFAULT_OUTPUT_DIRECTORY,
+      unsortedStrategy: "prompt",
+    };
+  }
+
+  if (!isCommand(commandArgument)) {
+    throw new Error(`Unknown command "${commandArgument}". Run with --help for usage.`);
+  }
+
+  let datasetPath: string | undefined;
+  let inputDirectory = DEFAULT_INPUT_DIRECTORY;
+  let outputDirectory = DEFAULT_OUTPUT_DIRECTORY;
+  let unsortedStrategy: UnsortedStrategy = "prompt";
+  let outputOptionProvided = false;
+
+  for (let index = 0; index < remainingArguments.length; index += 1) {
+    const argument = remainingArguments[index];
+    if (argument === undefined) {
+      continue;
+    }
+
+    if (argument === "--input" || argument === "--output" || argument === "--unsorted") {
+      const optionValue = readOptionValue(remainingArguments, index, argument);
+      if (argument === "--input") {
+        inputDirectory = optionValue;
+      } else if (argument === "--output") {
+        outputDirectory = optionValue;
+        outputOptionProvided = true;
+      } else {
+        unsortedStrategy = parseUnsortedStrategy(optionValue);
+      }
+
+      index += 1;
+      continue;
+    }
+
+    if (argument.startsWith("--")) {
+      throw new Error(`Unknown option "${argument}".`);
+    }
+
+    if (commandArgument === "process" && datasetPath === undefined) {
+      datasetPath = argument;
+    } else {
+      throw new Error(`Unexpected argument "${argument}".`);
+    }
+  }
+
+  if (commandArgument === "process" && !datasetPath) {
+    throw new Error("The process command requires a dataset file path.");
+  }
+
+  if (commandArgument === "benchmark" && outputOptionProvided) {
+    throw new Error("The benchmark command does not write output files; remove --output.");
+  }
+
+  const parsedOptions: CliOptions = {
+    command: commandArgument,
+    inputDirectory,
+    outputDirectory,
+    unsortedStrategy,
+  };
+
+  if (datasetPath !== undefined) {
+    parsedOptions.datasetPath = datasetPath;
+  }
+
+  return parsedOptions;
+};
+
+export const HELP_TEXT = `Spacecom Encounter Analyzer
+
+Usage:
+  pnpm start -- process <dataset.txt> [--output <directory>] [--unsorted <prompt|external|cancel>]
+  pnpm start -- process-all [--input <directory>] [--output <directory>] [--unsorted <prompt|external|cancel>]
+  pnpm start -- benchmark [--input <directory>] [--unsorted <prompt|external|cancel>]
+
+Commands:
+  process       Process one dataset and write its encounter JSON.
+  process-all   Process all .txt datasets in the input directory.
+  benchmark     Process each dataset and print execution and memory metrics without writing JSON.
+
+Options:
+  --input       Input directory for process-all and benchmark (default: datasets/inputs).
+  --output      Output directory (default: datasets/outputs).
+  --unsorted    Fallback behavior: prompt, external, or cancel (default: prompt).
+  --help        Show this help message.`;
+
+const throwMissingDatasetPath = (): never => {
+  throw new Error("The process command requires a dataset file path.");
+};
+
+export const runCommand = async (args: string[]): Promise<void> => {
+  const options = parseArguments(args);
+  if (options.command === "help") {
+    process.stdout.write(`${HELP_TEXT}\n`);
+    return;
+  }
+
+  const files =
+    options.command === "process"
+      ? [resolveWorkspacePath(options.datasetPath ?? throwMissingDatasetPath())]
+      : await listDatasetFiles(resolveWorkspacePath(options.inputDirectory));
+
+  for (const datasetPath of files) {
+    const outputPath =
+      options.command === "benchmark"
+        ? undefined
+        : getDefaultOutputPath(datasetPath, resolveWorkspacePath(options.outputDirectory));
+    const processOptions =
+      outputPath === undefined
+        ? { unsortedStrategy: options.unsortedStrategy }
+        : { outputPath, unsortedStrategy: options.unsortedStrategy };
+    // O benchmark roda em sequência para deixar cada medição associada ao seu dataset.
+    // eslint-disable-next-line no-await-in-loop
+    const summary = await processDataset(datasetPath, processOptions);
+    process.stdout.write(`${formatDatasetSummary(summary)}\n\n`);
+  }
+};

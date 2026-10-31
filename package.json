@@ -17,6 +17,7 @@
     "staged": "vp staged",
     "dev:cli": "vp run --filter @spacecom-encounter-analyzer/engine build && vp run --filter @spacecom-encounter-analyzer/cli dev",
     "build:cli": "vp run --filter @spacecom-encounter-analyzer/engine build && vp run --filter @spacecom-encounter-analyzer/cli build",
+    "start": "pnpm build:cli && pnpm --filter @spacecom-encounter-analyzer/cli start",
     "fix": "ultracite fix",
     "prepare": "husky"
   },

@@ -21,11 +21,11 @@ streaming grouper requires records to be sorted by timestamp and reports an
 `UnsortedTimestampsError` otherwise. Unsorted data can be grouped in memory for
 small inputs or externally sorted in disk-backed chunks for larger inputs;
 external sorting uses temporary files and bounded merge passes. The CLI does
-not yet prompt for a fallback strategy. The engine now detects close pairs
+prompt before retrying an unordered dataset with external sorting. The engine detects close pairs
 within each timestamp group using Haversine distance and the strict 20-meter
 limit, then classifies each pair as protective, faction, or generic. The
 classifier prioritizes protective restrictions over shared faction membership
-when both rules apply. The complete CLI workflow is still being implemented.
+when both rules apply.
 
 ## Technologies
 
@@ -72,6 +72,32 @@ Build the engine and develop only the CLI:
 ```bash
 pnpm dev:cli
 ```
+
+## CLI commands
+
+Process one dataset and save its JSON under `datasets/outputs`:
+
+```bash
+pnpm start -- process datasets/inputs/dataset1.txt
+```
+
+Process every `.txt` file in the input directory:
+
+```bash
+pnpm start -- process-all
+pnpm start -- process-all --input ./datasets/inputs --output ./datasets/outputs
+```
+
+Run the same processing without writing JSON files and print timing and memory
+metrics for each dataset:
+
+```bash
+pnpm start -- benchmark
+```
+
+If timestamps are out of order, the CLI asks whether to retry with disk-backed
+external sorting. Use `--unsorted external` to select this fallback without a
+prompt, or `--unsorted cancel` to stop instead.
 
 ## Builds
 

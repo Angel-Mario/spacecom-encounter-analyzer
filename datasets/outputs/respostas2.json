@@ -1,11 +1,10 @@
 [
   {
-    "tipo": "faccao",
+    "distanciaMetros": 10.81640474094182,
     "monitoradosEncontro": [
       10,
       11
     ],
-    "timestamp": "2024-01-01 00:02:05",
     "posicoes": {
       "10": {
         "lat": -14.62732,
@@ -16,15 +15,15 @@
         "lon": -36.31869
       }
     },
-    "distanciaMetros": 10.81640474094182
+    "timestamp": "2024-01-01 00:02:05",
+    "tipo": "faccao"
   },
   {
-    "tipo": "protetiva",
+    "distanciaMetros": 8.90961951633724,
     "monitoradosEncontro": [
       12,
       13
     ],
-    "timestamp": "2024-01-01 00:29:50",
     "posicoes": {
       "12": {
         "lat": -7.33193,
@@ -35,15 +34,15 @@
         "lon": -65.93137
       }
     },
-    "distanciaMetros": 8.909619516337239
+    "timestamp": "2024-01-01 00:29:50",
+    "tipo": "protetiva"
   },
   {
-    "tipo": "generico",
+    "distanciaMetros": 10.205209934010645,
     "monitoradosEncontro": [
       3,
       19
     ],
-    "timestamp": "2024-01-01 00:35:55",
     "posicoes": {
       "3": {
         "lat": -25.99892,
@@ -54,15 +53,15 @@
         "lon": -56.96694
       }
     },
-    "distanciaMetros": 10.205209934010645
+    "timestamp": "2024-01-01 00:35:55",
+    "tipo": "generico"
   },
   {
-    "tipo": "generico",
+    "distanciaMetros": 9.349741643529189,
     "monitoradosEncontro": [
       6,
       7
     ],
-    "timestamp": "2024-01-01 00:43:35",
     "posicoes": {
       "6": {
         "lat": -15.03744,
@@ -73,15 +72,15 @@
         "lon": -73.42174
       }
     },
-    "distanciaMetros": 9.349741643529189
+    "timestamp": "2024-01-01 00:43:35",
+    "tipo": "generico"
   },
   {
-    "tipo": "generico",
+    "distanciaMetros": 8.811738897421028,
     "monitoradosEncontro": [
       4,
       5
     ],
-    "timestamp": "2024-01-01 01:26:30",
     "posicoes": {
       "4": {
         "lat": -29.13547,
@@ -92,15 +91,15 @@
         "lon": -43.25301
       }
     },
-    "distanciaMetros": 8.811738897421028
+    "timestamp": "2024-01-01 01:26:30",
+    "tipo": "generico"
   },
   {
-    "tipo": "faccao",
+    "distanciaMetros": 8.892813491126276,
     "monitoradosEncontro": [
       8,
       9
     ],
-    "timestamp": "2024-01-01 01:43:00",
     "posicoes": {
       "8": {
         "lat": -14.77075,
@@ -111,6 +110,7 @@
         "lon": -55.87738
       }
     },
-    "distanciaMetros": 8.892813491126276
+    "timestamp": "2024-01-01 01:43:00",
+    "tipo": "faccao"
   }
 ]

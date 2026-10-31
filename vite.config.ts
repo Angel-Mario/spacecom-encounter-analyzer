@@ -31,7 +31,7 @@ export default defineConfig({
   },
   test: {
     fileParallelism: false,
-    include: ["packages/engine/src/**/*.test.ts"],
+    include: ["apps/cli/src/**/*.test.ts", "packages/engine/src/**/*.test.ts"],
     testTimeout: 60_000,
   },
 });
