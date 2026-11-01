@@ -1,9 +1,10 @@
 import { Button } from "@fluentui/react-components";
-import { ArrowResetRegular } from "@fluentui/react-icons";
+import { ArrowResetRegular, MapRegular } from "@fluentui/react-icons";
 import type {
   GeoJSONSource as MapLibreGeoJSONSource,
   Map as MapLibreMap,
   Popup as MapLibrePopup,
+  StyleSpecification,
 } from "maplibre-gl";
 import mapLibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 import { useEffect, useRef, useState } from "react";
@@ -21,7 +22,6 @@ interface EncounterMapPoint {
   monitorIds: string;
   timestamp: string;
   distanceMeters: number;
-  displayIndex: number;
 }
 
 interface EncounterMapProps {
@@ -31,10 +31,29 @@ interface EncounterMapProps {
   onSelectEncounter: (encounterIndex: number) => void;
 }
 
-const MAP_STYLE_URL = "https://demotiles.maplibre.org/style.json";
+const OPENSTREETMAP_STYLE = {
+  layers: [
+    {
+      id: "openstreetmap",
+      source: "openstreetmap",
+      type: "raster" as const,
+    },
+  ],
+  sources: {
+    openstreetmap: {
+      attribution:
+        '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a>',
+      maxzoom: 19,
+      tileSize: 256,
+      tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+      type: "raster" as const,
+    },
+  },
+  version: 8,
+} satisfies StyleSpecification;
+const MAPLIBRE_STYLE_URL = "https://demotiles.maplibre.org/style.json";
 const ENCOUNTER_SOURCE_ID = "encounters";
 const ENCOUNTER_LAYER_ID = "encounter-points";
-const ENCOUNTER_LABEL_LAYER_ID = "encounter-labels";
 
 const createGeoJson = (
   points: EncounterMapPoint[],
@@ -47,7 +66,6 @@ const createGeoJson = (
     },
     id: point.encounterIndex,
     properties: {
-      displayIndex: point.displayIndex,
       encounterIndex: point.encounterIndex,
       encounterType: point.encounterType,
       selected: point.encounterIndex === selectedEncounterIndex,
@@ -165,13 +183,16 @@ const EncounterMap = ({
   const onSelectEncounterRef = useRef(onSelectEncounter);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
+  const [isOpenStreetMap, setIsOpenStreetMap] = useState(true);
+  const isOpenStreetMapRef = useRef(isOpenStreetMap);
 
   useEffect(() => {
     pointsRef.current = points;
     copyRef.current = copy;
     selectedEncounterIndexRef.current = selectedEncounterIndex;
     onSelectEncounterRef.current = onSelectEncounter;
-  }, [copy, onSelectEncounter, points, selectedEncounterIndex]);
+    isOpenStreetMapRef.current = isOpenStreetMap;
+  }, [copy, isOpenStreetMap, onSelectEncounter, points, selectedEncounterIndex]);
 
   useEffect(() => {
     if (!containerRef.current) {
@@ -199,7 +220,7 @@ const EncounterMap = ({
         const currentMap = new MapLibreMapClass({
           center: [0, 0],
           container: containerRef.current,
-          style: MAP_STYLE_URL,
+          style: OPENSTREETMAP_STYLE,
           zoom: 2,
         });
         const currentPopup = new Popup({
@@ -213,7 +234,16 @@ const EncounterMap = ({
         currentMap.addControl(new NavigationControl({ showCompass: false }), "top-right");
         currentMap.addControl(new ScaleControl({ unit: "metric" }), "bottom-left");
 
-        currentMap.once("load", () => {
+        currentMap.on("style.load", () => {
+          const usesOpenStreetMap = "openstreetmap" in currentMap.getStyle().sources;
+          if (usesOpenStreetMap !== isOpenStreetMapRef.current) {
+            currentMap.setStyle(
+              isOpenStreetMapRef.current ? OPENSTREETMAP_STYLE : MAPLIBRE_STYLE_URL,
+              { diff: false },
+            );
+            return;
+          }
+
           currentMap.addSource(ENCOUNTER_SOURCE_ID, {
             data: createGeoJson(pointsRef.current, selectedEncounterIndexRef.current),
             type: "geojson",
@@ -233,67 +263,56 @@ const EncounterMap = ({
                 "#c70008",
               ],
               "circle-opacity": 0.96,
-              "circle-radius": ["case", ["boolean", ["get", "selected"], false], 10, 7],
+              "circle-radius": ["case", ["boolean", ["get", "selected"], false], 9, 6],
               "circle-stroke-color": [
                 "case",
                 ["boolean", ["get", "selected"], false],
                 "#fe040c",
                 "#ffffff",
               ],
-              "circle-stroke-width": ["case", ["boolean", ["get", "selected"], false], 3, 2],
+              "circle-stroke-width": ["case", ["boolean", ["get", "selected"], false], 3, 1.5],
             },
             source: ENCOUNTER_SOURCE_ID,
             type: "circle",
-          });
-          currentMap.addLayer({
-            id: ENCOUNTER_LABEL_LAYER_ID,
-            layout: {
-              "text-allow-overlap": true,
-              "text-field": ["to-string", ["get", "displayIndex"]],
-              "text-ignore-placement": true,
-              "text-size": 10,
-            },
-            paint: {
-              "text-color": "#ffffff",
-              "text-halo-color": "#32253a",
-              "text-halo-width": 0.5,
-            },
-            source: ENCOUNTER_SOURCE_ID,
-            type: "symbol",
           });
           setMapError(null);
           setIsMapLoaded(true);
         });
 
         currentMap.on("error", (event) => {
-          if (!disposed && !currentMap.isStyleLoaded()) {
+          if (!disposed && !currentMap.isStyleLoaded() && event.error) {
             setMapError(event.error.message);
           }
         });
-        currentMap.on("mouseenter", ENCOUNTER_LAYER_ID, () => {
-          currentMap.getCanvas().style.cursor = "pointer";
-        });
-        currentMap.on("mouseleave", ENCOUNTER_LAYER_ID, () => {
-          currentMap.getCanvas().style.cursor = "";
-          currentPopup.remove();
-        });
-        currentMap.on("mousemove", ENCOUNTER_LAYER_ID, (event) => {
-          const feature = event.features?.[0];
+        currentMap.on("mousemove", (event) => {
+          const feature = currentMap.getLayer(ENCOUNTER_LAYER_ID)
+            ? currentMap.queryRenderedFeatures(event.point, {
+                layers: [ENCOUNTER_LAYER_ID],
+              })[0]
+            : undefined;
           const encounterIndex = getEncounterIndex(feature?.properties);
           const point = pointsRef.current.find(
             (candidate) => candidate.encounterIndex === encounterIndex,
           );
           if (!point) {
+            currentMap.getCanvas().style.cursor = "";
+            currentPopup.remove();
             return;
           }
 
+          currentMap.getCanvas().style.cursor = "pointer";
           currentPopup
             .setLngLat(event.lngLat)
             .setDOMContent(createPopupContent(copyRef.current, point))
             .addTo(currentMap);
         });
-        currentMap.on("click", ENCOUNTER_LAYER_ID, (event) => {
-          const encounterIndex = getEncounterIndex(event.features?.[0]?.properties);
+        currentMap.on("click", (event) => {
+          const feature = currentMap.getLayer(ENCOUNTER_LAYER_ID)
+            ? currentMap.queryRenderedFeatures(event.point, {
+                layers: [ENCOUNTER_LAYER_ID],
+              })[0]
+            : undefined;
+          const encounterIndex = getEncounterIndex(feature?.properties);
           if (encounterIndex !== undefined) {
             onSelectEncounterRef.current(encounterIndex);
           }
@@ -314,6 +333,19 @@ const EncounterMap = ({
       mapRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !isMapLoaded) {
+      return;
+    }
+
+    setIsMapLoaded(false);
+    setMapError(null);
+    map.setStyle(isOpenStreetMap ? OPENSTREETMAP_STYLE : MAPLIBRE_STYLE_URL, {
+      diff: false,
+    });
+  }, [isOpenStreetMap]);
 
   useEffect(() => {
     if (!isMapLoaded) {
@@ -352,18 +384,31 @@ const EncounterMap = ({
           {copy.mapLoading}
         </div>
       ) : null}
-      <Button
-        aria-label={copy.resetMap}
-        className="map-reset-control"
-        icon={<ArrowResetRegular />}
-        onClick={() => {
-          const map = mapRef.current;
-          if (map) {
-            fitPoints(map, pointsRef.current);
-          }
-        }}
-        size="small"
-      />
+      <div className="map-controls">
+        <Button
+          aria-label={isOpenStreetMap ? copy.switchToOriginalMap : copy.switchToOpenStreetMap}
+          className="map-style-control"
+          icon={<MapRegular />}
+          onClick={() => setIsOpenStreetMap((current) => !current)}
+          size="small"
+          title={isOpenStreetMap ? copy.switchToOriginalMap : copy.switchToOpenStreetMap}
+        >
+          {isOpenStreetMap ? copy.openStreetMap : copy.originalMapView}
+        </Button>
+        <Button
+          aria-label={copy.resetMap}
+          className="map-reset-control"
+          icon={<ArrowResetRegular />}
+          onClick={() => {
+            const map = mapRef.current;
+            if (map) {
+              fitPoints(map, pointsRef.current);
+            }
+          }}
+          size="small"
+          title={copy.resetMap}
+        />
+      </div>
     </div>
   );
 };

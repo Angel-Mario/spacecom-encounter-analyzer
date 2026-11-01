@@ -105,15 +105,32 @@
 }
 
 .settings-note-complete {
+  display: flex;
+  width: 100%;
+  align-items: center;
   justify-content: flex-start;
+  line-height: 1.2;
 }
 
-.settings-note-complete svg {
+.settings-note-content {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.settings-note-content > svg {
+  display: block;
   flex: none;
-  margin-top: 1px;
   width: 15px;
   height: 15px;
   color: #d9040b;
+}
+
+.settings-note-content > span {
+  display: block;
+  min-width: 0;
+  line-height: inherit;
 }
 
 @media (max-width: 1120px) {

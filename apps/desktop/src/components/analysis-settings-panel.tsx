@@ -126,9 +126,13 @@ const AnalysisSettingsPanel = ({
       size={100}
     >
       {!errorMessage && statusMessage === copy.analysisComplete ? (
-        <CheckmarkCircleFilled aria-hidden="true" />
-      ) : null}
-      {errorMessage || (desktopOnly ? copy.demoAnalysisNotice : statusMessage)}
+        <span className="settings-note-content">
+          <CheckmarkCircleFilled aria-hidden="true" />
+          <span>{desktopOnly ? copy.demoAnalysisNotice : statusMessage}</span>
+        </span>
+      ) : (
+        errorMessage || (desktopOnly ? copy.demoAnalysisNotice : statusMessage)
+      )}
     </Text>
   </Card>
 );

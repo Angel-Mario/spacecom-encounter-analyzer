@@ -1,4 +1,4 @@
-import { Button, Card, Input, Tab, TabList, Text } from "@fluentui/react-components";
+import { Button, Card, Input, Link, Tab, TabList, Text } from "@fluentui/react-components";
 import {
   ArrowDownloadRegular,
   ChartMultipleFilled,
@@ -10,15 +10,18 @@ import {
   ListRegular,
   MapFilled,
   MapRegular,
+  OpenRegular,
   SearchRegular,
 } from "@fluentui/react-icons";
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { save } from "@tauri-apps/plugin-dialog";
-import { useEffect, useMemo, useState } from "react";
+import { openUrl } from "@tauri-apps/plugin-opener";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 
+import haversineFormulaUrl from "../../../../docs/images/haversine-formula.svg?url";
 import type { LocaleCopy } from "../i18n";
-import type { Encounter, EncounterType } from "../types";
+import type { Coordinates, Encounter, EncounterType } from "../types";
 import EncounterMap from "./encounter-map";
 
 type WorkspaceTab = "results" | "map" | "details" | "cli";
@@ -34,6 +37,7 @@ interface WorkspacePanelProps {
 }
 
 const PAGE_SIZE = 10;
+const HAVERSINE_REFERENCE_URL = "https://www.movable-type.co.uk/scripts/latlong.html";
 
 const mapTypeClass = (type: EncounterType): string => `map-type-${type}`;
 
@@ -49,6 +53,39 @@ const encounterTypeLabels = (copy: LocaleCopy, type: EncounterType): string => {
 
 const formatDistance = (distance: number): string =>
   `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(distance)} m`;
+
+const EARTH_RADIUS_METERS = 6_371_000;
+
+const formatCalculationValue = (value: number): string => {
+  if (value !== 0 && Math.abs(value) < 0.0001) {
+    return new Intl.NumberFormat(undefined, {
+      maximumSignificantDigits: 6,
+      notation: "scientific",
+    }).format(value);
+  }
+
+  return new Intl.NumberFormat(undefined, { maximumFractionDigits: 10 }).format(value);
+};
+
+const calculateHaversineBreakdown = (first: Coordinates, second: Coordinates) => {
+  const firstLatitude = (first.lat * Math.PI) / 180;
+  const secondLatitude = (second.lat * Math.PI) / 180;
+  const latitudeDifference = ((second.lat - first.lat) * Math.PI) / 180;
+  const longitudeDifference = ((second.lon - first.lon) * Math.PI) / 180;
+  const haversine =
+    Math.sin(latitudeDifference / 2) ** 2 +
+    Math.cos(firstLatitude) * Math.cos(secondLatitude) * Math.sin(longitudeDifference / 2) ** 2;
+  const centralAngle = 2 * Math.atan2(Math.sqrt(Math.min(1, haversine)), Math.sqrt(1 - haversine));
+
+  return {
+    centralAngle,
+    firstLatitude,
+    haversine,
+    latitudeDifference,
+    longitudeDifference,
+    secondLatitude,
+  };
+};
 
 const handleEncounterRowKeyDown = (
   event: KeyboardEvent<HTMLTableRowElement>,
@@ -97,8 +134,12 @@ const WorkspacePanel = ({
   const [filter, setFilter] = useState<ResultFilter>("all");
   const [searchValue, setSearchValue] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
+  const resultsTableWrapRef = useRef<HTMLDivElement>(null);
   const [selectedEncounterIndex, setSelectedEncounterIndex] = useState(0);
+  const [showSelectedOnly, setShowSelectedOnly] = useState(false);
   const [exportError, setExportError] = useState("");
+  const [referenceError, setReferenceError] = useState("");
 
   useEffect(() => {
     if (isAnalysisRunning) {
@@ -119,12 +160,47 @@ const WorkspacePanel = ({
       );
   }, [encounters, filter, searchValue]);
 
-  const pageCount = Math.ceil(filteredEncounters.length / PAGE_SIZE);
+  const pageCount = Math.ceil(filteredEncounters.length / pageSize);
   const displayedPage = Math.min(currentPage, Math.max(pageCount - 1, 0));
   const visibleEncounters = filteredEncounters.slice(
-    displayedPage * PAGE_SIZE,
-    (displayedPage + 1) * PAGE_SIZE,
+    displayedPage * pageSize,
+    (displayedPage + 1) * pageSize,
   );
+
+  useEffect(() => {
+    const tableWrap = resultsTableWrapRef.current;
+    if (!tableWrap || filteredEncounters.length === 0) {
+      return;
+    }
+
+    const updatePageSize = () => {
+      const header = tableWrap.querySelector("thead");
+      const firstRow = tableWrap.querySelector("tbody tr");
+      if (!header || !firstRow || tableWrap.clientHeight === 0) {
+        return;
+      }
+
+      const rowHeight = firstRow.getBoundingClientRect().height;
+      if (rowHeight === 0) {
+        return;
+      }
+
+      const availableRows = Math.floor(
+        (tableWrap.clientHeight - header.getBoundingClientRect().height) / rowHeight,
+      );
+      setPageSize(Math.max(PAGE_SIZE, availableRows));
+    };
+
+    const observer = new ResizeObserver(updatePageSize);
+    observer.observe(tableWrap);
+    const firstRow = tableWrap.querySelector("tbody tr");
+    if (firstRow) {
+      observer.observe(firstRow);
+    }
+    updatePageSize();
+
+    return () => observer.disconnect();
+  }, [displayedPage, filteredEncounters.length, visibleEncounters.length]);
   const activeSelectedEncounterIndex =
     filteredEncounters.find(({ index }) => index === selectedEncounterIndex)?.index ??
     filteredEncounters[0]?.index;
@@ -133,38 +209,35 @@ const WorkspacePanel = ({
       ? undefined
       : encounters[activeSelectedEncounterIndex];
   const mapPoints = useMemo(() => {
-    const rawPoints = filteredEncounters.flatMap(
-      ({ encounter, index: encounterIndex }, displayIndex) => {
-        const positions = Object.entries(encounter.posicoes).filter(
-          ([, coordinates]) =>
-            Number.isFinite(coordinates.lat) &&
-            coordinates.lat >= -90 &&
-            coordinates.lat <= 90 &&
-            Number.isFinite(coordinates.lon) &&
-            coordinates.lon >= -180 &&
-            coordinates.lon <= 180,
-        );
-        if (positions.length === 0) {
-          return [];
-        }
+    const rawPoints = filteredEncounters.flatMap(({ encounter, index: encounterIndex }) => {
+      const positions = Object.entries(encounter.posicoes).filter(
+        ([, coordinates]) =>
+          Number.isFinite(coordinates.lat) &&
+          coordinates.lat >= -90 &&
+          coordinates.lat <= 90 &&
+          Number.isFinite(coordinates.lon) &&
+          coordinates.lon >= -180 &&
+          coordinates.lon <= 180,
+      );
+      if (positions.length === 0) {
+        return [];
+      }
 
-        const latitude = positions.reduce((sum, [, coordinates]) => sum + coordinates.lat, 0);
-        const longitude = positions.reduce((sum, [, coordinates]) => sum + coordinates.lon, 0);
+      const latitude = positions.reduce((sum, [, coordinates]) => sum + coordinates.lat, 0);
+      const longitude = positions.reduce((sum, [, coordinates]) => sum + coordinates.lon, 0);
 
-        return [
-          {
-            displayIndex: displayIndex + 1,
-            distanceMeters: encounter.distanciaMetros,
-            encounterIndex,
-            encounterType: encounter.tipo,
-            lat: latitude / positions.length,
-            lon: longitude / positions.length,
-            monitorIds: positions.map(([monitorId]) => monitorId).join(" · "),
-            timestamp: encounter.timestamp,
-          },
-        ];
-      },
-    );
+      return [
+        {
+          distanceMeters: encounter.distanciaMetros,
+          encounterIndex,
+          encounterType: encounter.tipo,
+          lat: latitude / positions.length,
+          lon: longitude / positions.length,
+          monitorIds: positions.map(([monitorId]) => monitorId).join(" · "),
+          timestamp: encounter.timestamp,
+        },
+      ];
+    });
 
     return rawPoints;
   }, [filteredEncounters]);
@@ -226,6 +299,16 @@ const WorkspacePanel = ({
     }
   };
 
+  const openHaversineReference = async () => {
+    try {
+      await openUrl(HAVERSINE_REFERENCE_URL);
+      setReferenceError("");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      setReferenceError(`${copy.referenceOpenFailed}: ${message}`);
+    }
+  };
+
   const renderMap = () => {
     if (mapPoints.length === 0) {
       return (
@@ -240,15 +323,31 @@ const WorkspacePanel = ({
     const selectedMapEncounter = filteredEncounters.find(
       ({ index }) => index === activeSelectedEncounterIndex,
     )?.encounter;
+    const hasSelectedMapPoint = mapPoints.some(
+      (point) => point.encounterIndex === activeSelectedEncounterIndex,
+    );
+    const visibleMapPoints = showSelectedOnly
+      ? mapPoints.filter((point) => point.encounterIndex === activeSelectedEncounterIndex)
+      : mapPoints;
     return (
       <div className="map-view">
         <div className="map-toolbar">
-          <div className="map-legend">
+          <div className="map-heading">
             <Text as="h2" size={400} weight="bold">
               {copy.mapHeading}
             </Text>
             <Text size={200}>{copy.mapDescription}</Text>
           </div>
+          <Button
+            appearance={showSelectedOnly ? "primary" : "secondary"}
+            aria-label={showSelectedOnly ? copy.showAllEncounters : copy.showSelectedOnly}
+            className="result-filter-button"
+            disabled={!hasSelectedMapPoint}
+            onClick={() => setShowSelectedOnly((current) => !current)}
+            size="small"
+          >
+            {showSelectedOnly ? copy.showAllEncounters : copy.showSelectedOnly}
+          </Button>
         </div>
         <div aria-label={copy.mapLegend} className="map-type-legend" role="list">
           {(
@@ -262,7 +361,7 @@ const WorkspacePanel = ({
               <span aria-hidden="true" className={`map-legend-swatch ${mapTypeClass(type)}`} />
               {label}
               <span className="map-legend-count">
-                {mapPoints.filter((point) => point.encounterType === type).length}
+                {visibleMapPoints.filter((point) => point.encounterType === type).length}
               </span>
             </span>
           ))}
@@ -270,7 +369,7 @@ const WorkspacePanel = ({
         <EncounterMap
           copy={copy}
           onSelectEncounter={setSelectedEncounterIndex}
-          points={mapPoints}
+          points={visibleMapPoints}
           selectedEncounterIndex={activeSelectedEncounterIndex}
         />
         <div aria-label={copy.mapSelection} className="map-selection" role="status">
@@ -304,7 +403,7 @@ const WorkspacePanel = ({
         </div>
         <div className="map-caption">
           <Text size={200}>{copy.localView}</Text>
-          <Text size={200}>{copy.showingEncounters(mapPoints.length)}</Text>
+          <Text size={200}>{copy.showingEncounters(visibleMapPoints.length)}</Text>
         </div>
       </div>
     );
@@ -321,38 +420,172 @@ const WorkspacePanel = ({
       );
     }
 
+    const monitorLocations = Object.entries(selectedEncounter.posicoes);
+    const [firstMonitorId, secondMonitorId] = selectedEncounter.monitoradosEncontro;
+    const firstCoordinates = selectedEncounter.posicoes[String(firstMonitorId)];
+    const secondCoordinates = selectedEncounter.posicoes[String(secondMonitorId)];
+    const haversineBreakdown =
+      firstCoordinates && secondCoordinates
+        ? calculateHaversineBreakdown(firstCoordinates, secondCoordinates)
+        : null;
+    const hasMapPoint = mapPoints.some(
+      (point) => point.encounterIndex === activeSelectedEncounterIndex,
+    );
+
     return (
       <div className="details-view">
-        <div className="details-heading">
-          <Text as="h2" size={400} weight="bold">
-            {copy.encounterDetails}
-          </Text>
-          <Text size={200}>{encounterTypeLabels(copy, selectedEncounter.tipo)}</Text>
+        <div className="details-overview">
+          <div className="details-overview-heading">
+            <Text as="h2" size={500} weight="bold">
+              {copy.encounterDetails}
+            </Text>
+            <span className={`map-selection-type ${mapTypeClass(selectedEncounter.tipo)}`}>
+              {encounterTypeLabels(copy, selectedEncounter.tipo)}
+            </span>
+          </div>
+          {hasMapPoint ? (
+            <Button
+              appearance="primary"
+              icon={<MapRegular />}
+              onClick={() => {
+                setShowSelectedOnly(true);
+                setSelectedTab("map");
+              }}
+              size="small"
+            >
+              {copy.viewOnMap}
+            </Button>
+          ) : null}
         </div>
         <dl className="details-grid">
-          <div>
+          <div className="details-summary-item">
             <dt>{copy.monitorIds}</dt>
             <dd>{selectedEncounter.monitoradosEncontro.join(" · ")}</dd>
           </div>
-          <div>
+          <div className="details-summary-item">
             <dt>{copy.timestamp}</dt>
             <dd>{selectedEncounter.timestamp}</dd>
           </div>
-          <div>
+          <div className="details-summary-item">
             <dt>{copy.distanceMeters}</dt>
             <dd>{formatDistance(selectedEncounter.distanciaMetros)}</dd>
           </div>
-          {Object.entries(selectedEncounter.posicoes).map(([monitorId, coordinates]) => (
-            <div key={monitorId}>
-              <dt>
-                {copy.monitors} {monitorId}
-              </dt>
-              <dd>
-                {copy.latitude}: {coordinates.lat}, {copy.longitude}: {coordinates.lon}
-              </dd>
-            </div>
-          ))}
         </dl>
+        <section aria-label={copy.monitorLocations} className="monitor-locations">
+          <Text as="h3" size={300} weight="semibold">
+            {copy.monitorLocations}
+          </Text>
+          {monitorLocations.length > 0 ? (
+            <div className="monitor-location-grid">
+              {monitorLocations.map(([monitorId, coordinates]) => (
+                <div className="monitor-location-card" key={monitorId}>
+                  <Text as="h4" size={200} weight="semibold">
+                    {copy.monitors} {monitorId}
+                  </Text>
+                  <dl className="monitor-coordinates">
+                    <div>
+                      <dt>{copy.latitude}</dt>
+                      <dd>{coordinates.lat.toFixed(5)}</dd>
+                    </div>
+                    <div>
+                      <dt>{copy.longitude}</dt>
+                      <dd>{coordinates.lon.toFixed(5)}</dd>
+                    </div>
+                  </dl>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <Text className="monitor-locations-empty" size={200}>
+              {copy.withoutCoordinates}
+            </Text>
+          )}
+        </section>
+        <section aria-label={copy.distanceCalculation} className="distance-calculation">
+          <div className="distance-calculation-heading">
+            <Text as="h3" size={300} weight="semibold">
+              {copy.distanceCalculation}
+            </Text>
+            <Text size={100}>{copy.haversineMethod}</Text>
+            <span className="haversine-reference">
+              <OpenRegular aria-hidden="true" />
+              <Link
+                href={HAVERSINE_REFERENCE_URL}
+                onClick={(event) => {
+                  if (isTauri()) {
+                    event.preventDefault();
+                    void openHaversineReference();
+                  }
+                }}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                {copy.haversineReference}
+              </Link>
+            </span>
+          </div>
+          <img
+            alt={copy.haversineFormulaDescription}
+            className="haversine-formula"
+            src={haversineFormulaUrl}
+          />
+          {haversineBreakdown ? (
+            <dl className="haversine-substitution">
+              <div>
+                <dt>{copy.radianCoordinates}</dt>
+                <dd>
+                  φ₁ = {formatCalculationValue(haversineBreakdown.firstLatitude)}
+                  {" · "}
+                  φ₂ = {formatCalculationValue(haversineBreakdown.secondLatitude)}
+                </dd>
+              </div>
+              <div>
+                <dt>{copy.angleDifferences}</dt>
+                <dd>
+                  Δφ = {formatCalculationValue(haversineBreakdown.latitudeDifference)}
+                  {" · "}
+                  Δλ = {formatCalculationValue(haversineBreakdown.longitudeDifference)}
+                </dd>
+              </div>
+              <div>
+                <dt>{copy.haversineSubstitution}</dt>
+                <dd>
+                  <code className="haversine-expression">
+                    a = sin²(
+                    {formatCalculationValue(haversineBreakdown.latitudeDifference)} / 2)
+                    {" + "}cos(
+                    {formatCalculationValue(haversineBreakdown.firstLatitude)}){" × "}cos(
+                    {formatCalculationValue(haversineBreakdown.secondLatitude)}){" × "}sin²(
+                    {formatCalculationValue(haversineBreakdown.longitudeDifference)} / 2)
+                    {" = "}
+                    {formatCalculationValue(haversineBreakdown.haversine)}
+                  </code>
+                </dd>
+              </div>
+              <div>
+                <dt>{copy.centralAngle}</dt>
+                <dd>c = {formatCalculationValue(haversineBreakdown.centralAngle)} rad</dd>
+              </div>
+              <div className="haversine-result">
+                <dt>{copy.calculatedDistance}</dt>
+                <dd>
+                  {EARTH_RADIUS_METERS.toLocaleString()} ×{" "}
+                  {formatCalculationValue(haversineBreakdown.centralAngle)} ={" "}
+                  {formatDistance(selectedEncounter.distanciaMetros)}
+                </dd>
+              </div>
+            </dl>
+          ) : (
+            <Text className="monitor-locations-empty" size={200}>
+              {copy.withoutCoordinates}
+            </Text>
+          )}
+          {referenceError ? (
+            <Text className="haversine-reference-error" role="alert" size={100}>
+              {referenceError}
+            </Text>
+          ) : null}
+        </section>
       </div>
     );
   };
@@ -394,7 +627,7 @@ const WorkspacePanel = ({
           value={searchValue}
         />
       </div>
-      <div className="results-table-wrap">
+      <div className="results-table-wrap" ref={resultsTableWrapRef}>
         <table className="results-table">
           <thead>
             <tr>
