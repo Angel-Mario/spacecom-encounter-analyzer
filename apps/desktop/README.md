@@ -15,9 +15,21 @@ Build the frontend with:
 pnpm --filter @spacecom-encounter-analyzer/desktop build
 ```
 
-The desktop frontend uses Fluent UI React v9 (`@fluentui/react-components`).
-Its initial screen is a small interactive button demo using `FluentProvider`
-and the primary `Button` component.
+The desktop frontend uses Fluent UI React v9 (`@fluentui/react-components`)
+and Fluent System Icons (`@fluentui/react-icons`). Its dashboard is split into
+independent components under `src/components/`, with shared layout styles under
+`src/styles/`. The fixed desktop layout includes dataset import, analysis
+settings, result filters, map, and encounter details without page-level
+scrolling.
+
+The interface uses the official Spacecom logo from
+[spacecom.com.br](https://www.spacecom.com.br/imgs/logo-spc.svg) and a light
+brand theme.
+
+The interface is available in Spanish, English, and Brazilian Portuguese. The
+language selector is in the app header; the app remembers the selection and
+uses the operating system language on first launch when it is English or
+Portuguese, falling back to Spanish otherwise.
 
 ## Recommended IDE setup
 

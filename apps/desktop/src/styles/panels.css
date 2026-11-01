@@ -1,0 +1,282 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+  padding: 12px;
+}
+
+.panel-heading {
+  display: flex;
+  min-height: 24px;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-heading > h2 {
+  min-width: 0;
+  flex: 1;
+}
+
+.step-number {
+  display: inline-grid;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #fe5056, #c70008);
+  box-shadow: 0 3px 9px rgb(199 0 8 / 20%);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.panel-count {
+  min-width: 24px;
+  justify-content: center;
+}
+
+.drop-area {
+  display: flex;
+  min-height: 126px;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  overflow: hidden;
+  border: 1px dashed #efa7bd;
+  border-radius: 12px;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgb(255 226 237 / 75%), transparent 70%),
+    var(--colorNeutralBackground1);
+  text-align: center;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease;
+}
+
+.drop-area:hover {
+  border-color: #f04a70;
+  background-color: #fff9fb;
+}
+
+.drop-area .fui-Button {
+  min-width: 192px;
+  min-height: 34px;
+  border-radius: 6px;
+  background: #ff1f2b;
+  box-shadow: none;
+}
+
+.drop-icon {
+  width: 38px;
+  height: 38px;
+  margin-bottom: 3px;
+  color: #ed1742;
+  filter: drop-shadow(0 4px 5px rgb(237 23 66 / 16%));
+}
+
+.drop-title {
+  color: var(--colorNeutralForeground1);
+}
+
+.drop-subtitle {
+  color: var(--spacecom-muted);
+}
+
+.drop-hint {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 4px 0 5px;
+  color: var(--spacecom-muted);
+  font-size: 11px;
+}
+
+.drop-hint svg {
+  width: 14px;
+  height: 14px;
+}
+
+.file-list {
+  min-height: 34px;
+  flex: none;
+  overflow: hidden;
+}
+
+.file-list-empty {
+  display: block;
+  overflow: hidden;
+  color: var(--spacecom-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-list-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+
+.file-list-heading > span:last-child {
+  overflow: hidden;
+  color: var(--spacecom-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dataset-list {
+  display: flex;
+  max-height: 72px;
+  flex-direction: column;
+  gap: 1px;
+  overflow: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dataset-item {
+  display: flex;
+  min-width: 0;
+  min-height: 28px;
+  align-items: center;
+  gap: 7px;
+  padding-left: 3px;
+  border-radius: 6px;
+}
+
+.dataset-item > svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: #c70008;
+}
+
+.dataset-name {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dataset-item > span:nth-last-child(2) {
+  flex: none;
+  color: var(--spacecom-muted);
+}
+
+.dataset-item > button {
+  flex: none;
+}
+
+.settings-panel {
+  border-color: #f3d9e2;
+  background:
+    linear-gradient(145deg, rgb(255 239 245 / 88%), transparent 70%), var(--colorNeutralBackground1);
+}
+
+.settings-panel:focus {
+  outline: 2px solid #e66c71;
+  outline-offset: 2px;
+}
+
+.settings-fields {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.setting-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.setting-field label {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  color: var(--spacecom-muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.setting-field label svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+
+.setting-field select {
+  min-width: 0;
+}
+
+.start-analysis-button {
+  width: 100%;
+  min-height: 38px;
+  justify-content: center;
+  border-radius: 6px;
+  background: #ff1f2b;
+  box-shadow: none;
+}
+
+.start-analysis-button:disabled {
+  background: #f0f0f0;
+  box-shadow: none;
+}
+
+.settings-note {
+  color: var(--spacecom-muted);
+  text-align: center;
+}
+
+@media (max-width: 1120px) {
+  .panel {
+    gap: 11px;
+    padding: 10px 13px;
+  }
+
+  .settings-fields {
+    gap: 5px;
+  }
+
+  .setting-field label {
+    font-size: 10px;
+  }
+}
+
+@media (max-height: 760px) {
+  .panel {
+    gap: 7px;
+    padding: 9px;
+  }
+
+  .drop-area {
+    min-height: 102px;
+  }
+
+  .drop-icon {
+    width: 26px;
+    height: 26px;
+  }
+
+  .file-list {
+    min-height: 26px;
+  }
+
+  .dataset-list {
+    max-height: 48px;
+  }
+}
