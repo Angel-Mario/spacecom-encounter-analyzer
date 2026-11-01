@@ -1,28 +1,28 @@
 import { Badge, Text } from "@fluentui/react-components";
-import { LocationRegular } from "@fluentui/react-icons";
+import { LocationRegular, PlayFilled } from "@fluentui/react-icons";
 
 import type { LocaleCopy } from "../i18n";
 
 interface OverviewBannerProps {
   copy: LocaleCopy;
-  fileCount: number;
 }
 
-const OverviewBanner = ({ copy, fileCount }: OverviewBannerProps) => (
+const OverviewBanner = ({ copy }: OverviewBannerProps) => (
   <section className="overview-banner">
     <div className="banner-copy">
       <Badge appearance="tint" className="banner-kicker">
         <LocationRegular />
         {copy.bannerKicker}
       </Badge>
-      <Text as="h2" size={500} weight="semibold">
+      <Text as="h2" size={500} weight="bold">
         {copy.bannerHeading}
       </Text>
       <Text as="p" size={300}>
         {copy.bannerDescription}
       </Text>
       <Text className="banner-footnote" size={200}>
-        {fileCount > 0 ? copy.bannerFilesReady(fileCount) : copy.bannerImportPrompt}
+        <PlayFilled className="banner-footnote-icon" />
+        {copy.bannerImportPrompt}
       </Text>
     </div>
   </section>

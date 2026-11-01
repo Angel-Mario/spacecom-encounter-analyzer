@@ -54,7 +54,7 @@ pnpm start -- process-all --unsorted cancel
 pnpm start -- benchmark --input ./datasets/inputs --unsorted external
 ```
 
-`--unsorted` accepts `prompt` (the default), `external`, or `cancel`. In a non-interactive terminal, use `external` or `cancel` because a prompt cannot be answered.
+`--unsorted` accepts `prompt` (the default), `auto`, `external`, or `cancel`. `auto` first uses the parallel processing path and falls back to disk-backed sorting only if timestamps are unordered, without prompting; it is suitable for non-interactive applications. `external` always uses disk-backed sorting.
 
 ## Environment variables
 
@@ -62,24 +62,24 @@ Values shared by every command are declared in `.env.schema` at the repository r
 
 To customize, copy `.env.example` to a git-ignored `.env` file next to `.env.schema` or export the variables in the shell. Explicit CLI options always take precedence over environment values:
 
-| Variable                     | Default                         | Used by                                                                                      |
-| ---------------------------- | ------------------------------- | -------------------------------------------------------------------------------------------- |
-| `SPACECOM_INPUT_DIR`         | `datasets/inputs`               | Default input directory for `process-all` and `benchmark`.                                   |
-| `SPACECOM_OUTPUT_DIR`        | `datasets/outputs`              | Default output directory for `process` and `process-all`.                                    |
-| `SPACECOM_UNSORTED_STRATEGY` | `prompt`                        | Default for `--unsorted` when the flag is absent; accepts `prompt`, `external`, or `cancel`. |
-| `SPACECOM_CHUNK_BYTES`       | `8388608` (8 MiB)               | Target byte-range size handed to each parallel engine worker.                                |
-| `SPACECOM_MAX_WORKERS`       | `os.availableParallelism() - 1` | Maximum number of parallel worker threads per dataset.                                       |
+| Variable                     | Default                         | Used by                                                                                              |
+| ---------------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `SPACECOM_INPUT_DIR`         | `datasets/inputs`               | Default input directory for `process-all` and `benchmark`.                                           |
+| `SPACECOM_OUTPUT_DIR`        | `datasets/outputs`              | Default output directory for `process` and `process-all`.                                            |
+| `SPACECOM_UNSORTED_STRATEGY` | `prompt`                        | Default for `--unsorted` when the flag is absent; accepts `prompt`, `auto`, `external`, or `cancel`. |
+| `SPACECOM_CHUNK_BYTES`       | `8388608` (8 MiB)               | Target byte-range size handed to each parallel engine worker.                                        |
+| `SPACECOM_MAX_WORKERS`       | `os.availableParallelism() - 1` | Maximum number of parallel worker threads per dataset.                                               |
 
 `SPACECOM_CHUNK_BYTES` and `SPACECOM_MAX_WORKERS` tune the engine's parallel processing and are ignored when the caller passes explicit engine options (see the [engine README](../../packages/engine/README.md)). Invalid values are rejected by varlock before the process starts.
 
 ## Options and defaults
 
-| Option                  | Commands                   | Default            | Description                                                                   |
-| ----------------------- | -------------------------- | ------------------ | ----------------------------------------------------------------------------- |
-| `--input <directory>`   | `process-all`, `benchmark` | `datasets/inputs`  | Directory containing `.txt` datasets.                                         |
-| `--output <directory>`  | `process`, `process-all`   | `datasets/outputs` | Directory for encounter JSON files.                                           |
-| `--unsorted <strategy>` | All processing commands    | `prompt`           | Behavior when timestamps are out of order: `prompt`, `external`, or `cancel`. |
-| `--help`                | Any                        | —                  | Show command usage.                                                           |
+| Option                  | Commands                   | Default            | Description                                                                           |
+| ----------------------- | -------------------------- | ------------------ | ------------------------------------------------------------------------------------- |
+| `--input <directory>`   | `process-all`, `benchmark` | `datasets/inputs`  | Directory containing `.txt` datasets.                                                 |
+| `--output <directory>`  | `process`, `process-all`   | `datasets/outputs` | Directory for encounter JSON files.                                                   |
+| `--unsorted <strategy>` | All processing commands    | `prompt`           | Behavior when timestamps are out of order: `prompt`, `auto`, `external`, or `cancel`. |
+| `--help`                | Any                        | —                  | Show command usage.                                                                   |
 
 The defaults in this table change when the corresponding environment variables are set; see [Environment variables](#environment-variables).
 
@@ -97,7 +97,7 @@ For further reading, see the [Haversine formula and spherical-distance derivatio
 
 Each output file is a JSON array. Every encounter contains `tipo`, `monitoradosEncontro`, `timestamp`, `posicoes`, and `distanciaMetros`, matching the challenge's output schema. The original coordinates are retained in `posicoes`.
 
-The `--unsorted` option handles input whose timestamps are not in ascending order. The default `prompt` asks whether to retry with disk-backed external sorting; `external` selects that strategy directly, and `cancel` stops processing. Use `external` or `cancel` in a non-interactive terminal.
+The `--unsorted` option handles input whose timestamps are not in ascending order. The default `prompt` asks whether to retry with disk-backed external sorting; `auto` retries without prompting only when needed; `external` always selects disk-backed sorting; and `cancel` stops processing. Use `auto`, `external`, or `cancel` in a non-interactive terminal.
 
 ## Development
 

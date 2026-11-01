@@ -3,9 +3,17 @@
   display: flex;
   min-width: 0;
   align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   overflow: hidden;
   padding: 16px 24px;
-  background: linear-gradient(108deg, #8b0009 0%, #d4000a 60%, #ff3040 100%);
+  /* Imagen generada (satélite + curvas) anclada a la franja superior donde vive el satélite;
+     la capa superior funde su borde izquierdo con el rojo sólido para cubrir
+     anchos mayores sin costura visible. */
+  background:
+    linear-gradient(90deg, #8b020e 0%, #8b020e 26%, rgb(139 2 14 / 0%) 58%),
+    url("../assets/banner-bg.png") center 14% / cover no-repeat,
+    #8b020e;
   color: #fff;
 }
 
@@ -21,11 +29,12 @@
 }
 
 .banner-copy > h2 {
+  font-size: 25px;
   line-height: 1.15;
 }
 
 .banner-copy > p {
-  max-width: 430px;
+  max-width: 640px;
   color: rgb(255 244 247 / 91%);
   line-height: 1.4;
 }
@@ -39,8 +48,17 @@
 }
 
 .banner-footnote {
+  display: inline-flex;
   margin-top: 2px;
-  color: rgb(255 231 237 / 82%);
+  align-items: center;
+  gap: 7px;
+  color: rgb(255 231 237 / 92%);
+}
+
+.banner-footnote-icon {
+  flex: none;
+  width: 11px;
+  height: 11px;
 }
 
 @media (max-width: 1120px) {

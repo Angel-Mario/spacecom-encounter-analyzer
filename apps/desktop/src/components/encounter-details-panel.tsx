@@ -22,7 +22,7 @@ const EncounterDetailsPanel = ({ copy }: EncounterDetailsPanelProps) => (
   >
     <div className="details-heading">
       <div>
-        <Text as="h2" size={400} weight="semibold">
+        <Text as="h2" size={400} weight="bold">
           {copy.encounterDetails}
         </Text>
         <Text size={200}>{copy.chooseResult}</Text>

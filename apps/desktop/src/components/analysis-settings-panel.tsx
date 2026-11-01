@@ -1,26 +1,39 @@
-import { Button, Card, Select, Text } from "@fluentui/react-components";
+import { Button, Card, Text, Tooltip } from "@fluentui/react-components";
 import {
-  CalendarLtrRegular,
-  LocationRegular,
+  CheckmarkCircleFilled,
+  FolderOpenRegular,
   PlayRegular,
   SettingsRegular,
 } from "@fluentui/react-icons";
 
 import type { LocaleCopy } from "../i18n";
-import type { AnalysisSettings } from "../types";
 
 interface AnalysisSettingsPanelProps {
   copy: LocaleCopy;
-  fileCount: number;
-  onUpdate: (settings: Partial<AnalysisSettings>) => void;
-  settings: AnalysisSettings;
+  desktopOnly: boolean;
+  inputDirectory: string;
+  isRunning: boolean;
+  onChooseInputDirectory: () => void;
+  onChooseOutputDirectory: () => void;
+  onRevealDirectory: (target: "input" | "output") => void;
+  onRunAnalysis: () => void;
+  outputDirectory: string;
+  statusMessage: string;
+  errorMessage: string;
 }
 
 const AnalysisSettingsPanel = ({
   copy,
-  fileCount,
-  onUpdate,
-  settings,
+  desktopOnly,
+  inputDirectory,
+  isRunning,
+  onChooseInputDirectory,
+  onChooseOutputDirectory,
+  onRevealDirectory,
+  onRunAnalysis,
+  outputDirectory,
+  statusMessage,
+  errorMessage,
 }: AnalysisSettingsPanelProps) => (
   <Card
     aria-label={copy.settingsLabel}
@@ -29,78 +42,93 @@ const AnalysisSettingsPanel = ({
     tabIndex={-1}
   >
     <div className="panel-heading">
-      <span className="step-number">2</span>
       <SettingsRegular aria-hidden="true" />
-      <Text as="h2" weight="semibold">
+      <Text as="h2" weight="bold">
         {copy.settingsHeading}
       </Text>
     </div>
 
-    <div className="settings-fields">
-      <div className="setting-field">
-        <label htmlFor="monitor-filter">
-          <LocationRegular aria-hidden="true" />
-          {copy.monitors} (ID)
-        </label>
-        <Select
-          id="monitor-filter"
-          onChange={(_, data) => onUpdate({ monitor: data.value })}
+    <div className="directory-fields">
+      <div className="directory-field">
+        <Text as="h3" size={200} weight="semibold">
+          {copy.inputDirectory}
+        </Text>
+        <div className="directory-path-row">
+          <Text className="directory-path" title={inputDirectory}>
+            {inputDirectory}
+          </Text>
+          <Tooltip content={copy.revealInExplorer} relationship="label">
+            <Button
+              appearance="subtle"
+              aria-label={copy.revealInExplorer}
+              disabled={isRunning || desktopOnly}
+              icon={<FolderOpenRegular />}
+              onClick={() => onRevealDirectory("input")}
+              shape="square"
+              size="small"
+            />
+          </Tooltip>
+        </div>
+        <Button
+          disabled={isRunning || desktopOnly}
+          icon={<FolderOpenRegular />}
+          onClick={onChooseInputDirectory}
           size="small"
-          value={settings.monitor}
         >
-          <option value="all">{copy.all}</option>
-          <option value="with-coordinates">{copy.withCoordinates}</option>
-          <option value="without-coordinates">{copy.withoutCoordinates}</option>
-        </Select>
+          {copy.selectInputFolder}
+        </Button>
       </div>
 
-      <div className="setting-field">
-        <label htmlFor="timestamp-filter">
-          <CalendarLtrRegular aria-hidden="true" />
-          {copy.timestamp}
-        </label>
-        <Select
-          id="timestamp-filter"
-          onChange={(_, data) => onUpdate({ timestamp: data.value })}
+      <div className="directory-field">
+        <Text as="h3" size={200} weight="semibold">
+          {copy.outputDirectory}
+        </Text>
+        <div className="directory-path-row">
+          <Text className="directory-path" title={outputDirectory}>
+            {outputDirectory}
+          </Text>
+          <Tooltip content={copy.revealInExplorer} relationship="label">
+            <Button
+              appearance="subtle"
+              aria-label={copy.revealInExplorer}
+              disabled={isRunning || desktopOnly}
+              icon={<FolderOpenRegular />}
+              onClick={() => onRevealDirectory("output")}
+              shape="square"
+              size="small"
+            />
+          </Tooltip>
+        </div>
+        <Button
+          disabled={isRunning || desktopOnly}
+          icon={<FolderOpenRegular />}
+          onClick={onChooseOutputDirectory}
           size="small"
-          value={settings.timestamp}
         >
-          <option value="all">{copy.all}</option>
-          <option value="valid">{copy.valid}</option>
-          <option value="invalid">{copy.needsReview}</option>
-        </Select>
-      </div>
-
-      <div className="setting-field distance-field">
-        <label htmlFor="distance-filter">
-          <LocationRegular aria-hidden="true" />
-          {copy.distance}
-        </label>
-        <Select
-          id="distance-filter"
-          onChange={(_, data) => onUpdate({ distance: data.value })}
-          size="small"
-          value={settings.distance}
-        >
-          <option value="10">10</option>
-          <option value="20">20</option>
-          <option value="50">50</option>
-          <option value="100">100</option>
-        </Select>
+          {copy.selectOutputFolder}
+        </Button>
       </div>
     </div>
 
     <Button
       appearance="primary"
       className="start-analysis-button"
-      disabled
+      disabled={isRunning}
       icon={<PlayRegular />}
-      title={fileCount === 0 ? copy.importToEnableAnalysis : copy.engineNotConnected}
+      onClick={onRunAnalysis}
     >
-      {copy.startAnalysis}
+      {isRunning ? copy.analysisRunning : copy.startAnalysis}
     </Button>
-    <Text className="settings-note" size={100}>
-      {fileCount === 0 ? copy.importToPrepareAnalysis : copy.engineComingSoon}
+    <Text
+      aria-live={errorMessage ? "assertive" : "polite"}
+      className={`settings-note${!errorMessage && statusMessage === copy.analysisComplete ? " settings-note-complete" : ""}`}
+      role={errorMessage ? "alert" : "status"}
+      size={100}
+    >
+      {!errorMessage && statusMessage === copy.analysisComplete ? (
+        <CheckmarkCircleFilled aria-hidden="true" />
+      ) : null}
+      {errorMessage || (desktopOnly ? copy.demoAnalysisNotice : statusMessage)}
     </Text>
   </Card>
 );

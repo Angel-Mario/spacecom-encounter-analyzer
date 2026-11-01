@@ -41,7 +41,7 @@ const ResultsPanel = ({
   >
     <div className="results-toolbar">
       <div>
-        <Text as="h2" size={400} weight="semibold">
+        <Text as="h2" size={400} weight="bold">
           {copy.resultsHeading}
         </Text>
         <Text size={200}>

@@ -23,11 +23,11 @@ const DEFAULT_INPUT_DIRECTORY = path.join("datasets", "inputs");
 const DEFAULT_OUTPUT_DIRECTORY = path.join("datasets", "outputs");
 
 const parseUnsortedStrategy = (value: string): UnsortedStrategy => {
-  if (value === "prompt" || value === "external" || value === "cancel") {
+  if (value === "prompt" || value === "auto" || value === "external" || value === "cancel") {
     return value;
   }
 
-  throw new Error(`Invalid unsorted strategy "${value}". Use prompt, external, or cancel.`);
+  throw new Error(`Invalid unsorted strategy "${value}". Use prompt, auto, external, or cancel.`);
 };
 
 const readOptionValue = (args: string[], index: number, option: string): string => {
@@ -41,6 +41,36 @@ const readOptionValue = (args: string[], index: number, option: string): string 
 
 const isCommand = (value: string): value is CliOptions["command"] =>
   value === "process" || value === "process-all" || value === "benchmark";
+
+const parseDatasetArgument = (
+  command: CliOptions["command"],
+  argument: string,
+  datasetPath: string | undefined,
+): string => {
+  if (argument.startsWith("--")) {
+    throw new Error(`Unknown option "${argument}".`);
+  }
+
+  if (command !== "process" || datasetPath !== undefined) {
+    throw new Error(`Unexpected argument "${argument}".`);
+  }
+
+  return argument;
+};
+
+const validateCommandOptions = (
+  command: CliOptions["command"],
+  datasetPath: string | undefined,
+  outputOptionProvided: boolean,
+): void => {
+  if (command === "process" && !datasetPath) {
+    throw new Error("The process command requires a dataset file path.");
+  }
+
+  if (command === "benchmark" && outputOptionProvided) {
+    throw new Error("The benchmark command does not write output files; remove --output.");
+  }
+};
 
 // Analisa os argumentos da linha de comando e retorna as opções da CLI.
 // Lança Error se um comando ou opção desconhecida for fornecida.
@@ -71,39 +101,32 @@ export const parseArguments = (args: string[]): CliOptions => {
       continue;
     }
 
-    if (argument === "--input" || argument === "--output" || argument === "--unsorted") {
-      const optionValue = readOptionValue(remainingArguments, index, argument);
-      if (argument === "--input") {
-        inputDirectory = optionValue;
-      } else if (argument === "--output") {
-        outputDirectory = optionValue;
-        outputOptionProvided = true;
-      } else {
-        unsortedStrategy = parseUnsortedStrategy(optionValue);
+    switch (argument) {
+      case "--input": {
+        inputDirectory = readOptionValue(remainingArguments, index, argument);
+        index += 1;
+        break;
       }
-
-      index += 1;
-      continue;
-    }
-
-    if (argument.startsWith("--")) {
-      throw new Error(`Unknown option "${argument}".`);
-    }
-
-    if (commandArgument === "process" && datasetPath === undefined) {
-      datasetPath = argument;
-    } else {
-      throw new Error(`Unexpected argument "${argument}".`);
+      case "--output": {
+        outputDirectory = readOptionValue(remainingArguments, index, argument);
+        outputOptionProvided = true;
+        index += 1;
+        break;
+      }
+      case "--unsorted": {
+        unsortedStrategy = parseUnsortedStrategy(
+          readOptionValue(remainingArguments, index, argument),
+        );
+        index += 1;
+        break;
+      }
+      default: {
+        datasetPath = parseDatasetArgument(commandArgument, argument, datasetPath);
+      }
     }
   }
 
-  if (commandArgument === "process" && !datasetPath) {
-    throw new Error("The process command requires a dataset file path.");
-  }
-
-  if (commandArgument === "benchmark" && outputOptionProvided) {
-    throw new Error("The benchmark command does not write output files; remove --output.");
-  }
+  validateCommandOptions(commandArgument, datasetPath, outputOptionProvided);
 
   const parsedOptions: CliOptions = {
     command: commandArgument,
@@ -122,9 +145,9 @@ export const parseArguments = (args: string[]): CliOptions => {
 export const HELP_TEXT = `Spacecom Encounter Analyzer
 
 Usage:
-  pnpm start -- process <dataset.txt> [--output <directory>] [--unsorted <prompt|external|cancel>]
-  pnpm start -- process-all [--input <directory>] [--output <directory>] [--unsorted <prompt|external|cancel>]
-  pnpm start -- benchmark [--input <directory>] [--unsorted <prompt|external|cancel>]
+  pnpm start -- process <dataset.txt> [--output <directory>] [--unsorted <prompt|auto|external|cancel>]
+  pnpm start -- process-all [--input <directory>] [--output <directory>] [--unsorted <prompt|auto|external|cancel>]
+  pnpm start -- benchmark [--input <directory>] [--unsorted <prompt|auto|external|cancel>]
 
 Commands:
   process       Process one dataset and write its encounter JSON.
@@ -134,7 +157,7 @@ Commands:
 Options:
   --input       Input directory for process-all and benchmark (default: SPACECOM_INPUT_DIR or datasets/inputs).
   --output      Output directory (default: SPACECOM_OUTPUT_DIR or datasets/outputs).
-  --unsorted    Fallback behavior: prompt, external, or cancel (default: SPACECOM_UNSORTED_STRATEGY or prompt).
+  --unsorted    Unordered timestamps: prompt, auto, external, or cancel (default: SPACECOM_UNSORTED_STRATEGY or prompt).
   --help        Show this help message.
 
 Environment:
@@ -162,6 +185,7 @@ export const runCommand = async (args: string[]): Promise<void> => {
       : await listDatasetFiles(resolveWorkspacePath(options.inputDirectory));
 
   for (const datasetPath of files) {
+    process.stdout.write(`Processing ${path.basename(datasetPath)}...\n`);
     const outputPath =
       options.command === "benchmark"
         ? undefined

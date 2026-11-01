@@ -23,6 +23,13 @@ describe("CLI arguments and processing", () => {
     });
   });
 
+  it("accepts automatic fallback for unordered datasets", () => {
+    expect(parseArguments(["process-all", "--unsorted", "auto"])).toMatchObject({
+      command: "process-all",
+      unsortedStrategy: "auto",
+    });
+  });
+
   it("uses environment variable defaults for directories and strategy when flags are omitted", async () => {
     vi.resetModules();
     vi.doMock("./env.js", () => ({
@@ -147,6 +154,32 @@ describe("CLI arguments and processing", () => {
       });
 
       expect(promptCount).toBe(1);
+      expect(summary.records).toBe(4);
+      expect(summary.timestamps).toBe(2);
+      expect(summary.encounters).toHaveLength(2);
+      expect(summary.encounters.map(({ timestamp }) => timestamp)).toEqual([
+        "2026-10-30 18:00:00",
+        "2026-10-30 18:00:05",
+      ]);
+    } finally {
+      await rm(directory, { force: true, recursive: true });
+    }
+  });
+
+  it("automatically retries unordered datasets without prompting", async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), "spacecom-cli-test-"));
+    const inputPath = path.join(directory, "unsorted.txt");
+
+    try {
+      await writeFile(
+        inputPath,
+        `${header}\n1;;"2026-10-30 18:00:05";-23.55000;-46.63000;false;\n2;;"2026-10-30 18:00:05";-23.55001;-46.63000;false;\n3;;"2026-10-30 18:00:00";-23.55000;-46.63000;false;\n4;;"2026-10-30 18:00:00";-23.55001;-46.63000;false;\n`,
+      );
+
+      const summary = await processDataset(inputPath, {
+        unsortedStrategy: "auto",
+      });
+
       expect(summary.records).toBe(4);
       expect(summary.timestamps).toBe(2);
       expect(summary.encounters).toHaveLength(2);

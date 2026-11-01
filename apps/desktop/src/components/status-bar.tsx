@@ -1,76 +1,55 @@
 import { Text } from "@fluentui/react-components";
-import {
-  CalendarLtrRegular,
-  DatabaseRegular,
-  FlashRegular,
-  LocationRegular,
-  PeopleTeamRegular,
-} from "@fluentui/react-icons";
+import { FlashRegular } from "@fluentui/react-icons";
 
-import type { LocaleCopy } from "../i18n";
-import type { AnalysisSettings } from "../types";
+import type { Locale, LocaleCopy } from "../i18n";
+import type { AnalysisStats } from "../types";
 
 interface StatusBarProps {
   copy: LocaleCopy;
-  fileCount: number;
-  settings: AnalysisSettings;
+  encounterCount: number;
+  locale: Locale;
+  stats: AnalysisStats | null;
+  statusMessage: string;
 }
 
-const getMonitorLabel = (copy: LocaleCopy, value: string): string => {
-  if (value === "with-coordinates") {
-    return copy.withCoordinates;
-  }
+const formatDuration = (durationMs: number, locale: Locale): string => {
+  const numberFormat = new Intl.NumberFormat(locale === "pt" ? "pt-BR" : locale, {
+    maximumFractionDigits: durationMs >= 1000 ? 2 : 0,
+  });
 
-  if (value === "without-coordinates") {
-    return copy.withoutCoordinates;
-  }
-
-  return copy.all;
+  return durationMs >= 1000
+    ? `${numberFormat.format(durationMs / 1000)} s`
+    : `${numberFormat.format(durationMs)} ms`;
 };
 
-const getTimestampLabel = (copy: LocaleCopy, value: string): string => {
-  if (value === "invalid") {
-    return copy.needsReview;
-  }
+const StatusBar = ({ copy, encounterCount, locale, stats, statusMessage }: StatusBarProps) => {
+  const metrics = stats
+    ? [
+        { label: copy.statusDatasets(stats.datasets), key: "datasets" },
+        { label: copy.statusRows(stats.rowsProcessed), key: "rows" },
+        { label: copy.statusEncounters(encounterCount), key: "encounters" },
+        {
+          label: copy.statusElapsed(formatDuration(stats.durationMs, locale)),
+          key: "elapsed",
+        },
+      ]
+    : [];
 
-  if (value === "valid") {
-    return copy.valid;
-  }
-
-  return copy.all;
+  return (
+    <footer className="status-bar">
+      <div className="status-item status-runtime" title={copy.analysisEngine}>
+        <FlashRegular aria-hidden="true" />
+        <Text size={100}>{statusMessage}</Text>
+      </div>
+      <div className="status-metrics">
+        {metrics.map((metric) => (
+          <div className="status-item" key={metric.key} title={metric.label}>
+            <Text size={100}>{metric.label}</Text>
+          </div>
+        ))}
+      </div>
+    </footer>
+  );
 };
-
-const StatusBar = ({ copy, fileCount, settings }: StatusBarProps) => (
-  <footer className="status-bar">
-    <div className="status-group">
-      <div className="status-item status-ready" title={copy.loadedFiles}>
-        <DatabaseRegular aria-hidden="true" />
-        <Text size={100}>{copy.filesImported(fileCount)}</Text>
-      </div>
-      <div className="status-item" title={copy.configuredEncounterRadius}>
-        <LocationRegular aria-hidden="true" />
-        <Text size={100}>
-          {copy.radius}: {settings.distance} m
-        </Text>
-      </div>
-      <div className="status-item" title={copy.monitorFilter}>
-        <PeopleTeamRegular aria-hidden="true" />
-        <Text size={100}>
-          {copy.monitors}: {getMonitorLabel(copy, settings.monitor)}
-        </Text>
-      </div>
-      <div className="status-item" title={copy.timestampFilter}>
-        <CalendarLtrRegular aria-hidden="true" />
-        <Text size={100}>
-          {copy.timestamp}: {getTimestampLabel(copy, settings.timestamp)}
-        </Text>
-      </div>
-    </div>
-    <div className="status-item status-runtime" title={copy.analysisEngine}>
-      <FlashRegular aria-hidden="true" />
-      <Text size={100}>{copy.analysisPending}</Text>
-    </div>
-  </footer>
-);
 
 export default StatusBar;

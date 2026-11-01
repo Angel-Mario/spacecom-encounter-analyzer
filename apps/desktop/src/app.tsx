@@ -1,30 +1,25 @@
 import { FluentProvider, webLightTheme } from "@fluentui/react-components";
-import { useEffect, useState } from "react";
+import { invoke, isTauri } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
+import { open } from "@tauri-apps/plugin-dialog";
+import { useEffect, useRef, useState } from "react";
 
 import AnalysisSettingsPanel from "./components/analysis-settings-panel";
 import AppHeader from "./components/app-header";
-import DatasetImportPanel from "./components/dataset-import-panel";
 import OverviewBanner from "./components/overview-banner";
 import StatusBar from "./components/status-bar";
 import WorkspacePanel from "./components/workspace-panel";
 import { getInitialLocale, getLocaleCopy } from "./i18n";
-import type { Locale, UploadMessage } from "./i18n";
-import type { AnalysisSettings, ResultFilter, WorkspaceView } from "./types";
-import { getFileKey } from "./utils/file-utils";
+import type { Locale } from "./i18n";
+import { demoCliDatasetOutputs, demoCliHeader, demoEncounters } from "./mock-data";
+import type { AnalysisResult, AnalysisStats, Encounter } from "./types";
 
 import "./App.css";
 import "./styles/chrome.css";
 import "./styles/dashboard.css";
-import "./styles/illustrations.css";
 import "./styles/layout.css";
 import "./styles/panels.css";
 import "./styles/workspace.css";
-
-const initialSettings: AnalysisSettings = {
-  distance: "20",
-  monitor: "all",
-  timestamp: "all",
-};
 
 const spacecomTheme = {
   ...webLightTheme,
@@ -46,16 +41,26 @@ const spacecomTheme = {
   colorCompoundBrandStroke: "#FE040C",
   colorCompoundBrandStrokeHover: "#D9040B",
   colorCompoundBrandStrokePressed: "#B80309",
+  fontWeightMedium: 600,
+  fontWeightRegular: 500,
+  fontWeightSemibold: 700,
 };
 
 const App = () => {
+  const isDesktopApp = isTauri();
   const [locale, setLocale] = useState<Locale>(getInitialLocale);
-  const [files, setFiles] = useState<File[]>([]);
-  const [uploadMessage, setUploadMessage] = useState<UploadMessage>("");
-  const [activeView, setActiveView] = useState<WorkspaceView>("results");
-  const [resultFilter, setResultFilter] = useState<ResultFilter>("all");
-  const [searchValue, setSearchValue] = useState("");
-  const [settings, setSettings] = useState<AnalysisSettings>(initialSettings);
+  const [inputDirectory, setInputDirectory] = useState("datasets/inputs");
+  const [outputDirectory, setOutputDirectory] = useState("datasets/outputs");
+  const [analysisState, setAnalysisState] = useState<"ready" | "running" | "complete" | "error">(
+    "ready",
+  );
+  const [analysisOutput, setAnalysisOutput] = useState("");
+  const [analysisError, setAnalysisError] = useState("");
+  const [analysisStats, setAnalysisStats] = useState<AnalysisStats | null>(null);
+  const [demoDatasetIndex, setDemoDatasetIndex] = useState<number | null>(null);
+  const demoStartedAtRef = useRef<number | null>(null);
+  const [encounters, setEncounters] = useState<Encounter[]>(isDesktopApp ? [] : demoEncounters);
+  const desktopOnly = !isDesktopApp;
   const copy = getLocaleCopy(locale);
 
   useEffect(() => {
@@ -63,80 +68,191 @@ const App = () => {
     window.localStorage.setItem("spacecom-locale", locale);
   }, [locale]);
 
-  const addFiles = (selectedFiles: File[]) => {
-    const textFiles = selectedFiles.filter((file) => /\.txt$/iu.test(file.name));
-    const ignoredFiles = selectedFiles.length > textFiles.length;
-
-    if (textFiles.length === 0) {
-      setUploadMessage("invalid");
+  useEffect(() => {
+    if (isDesktopApp || analysisState !== "running" || demoDatasetIndex === null) {
       return;
     }
 
-    setFiles((currentFiles) => {
-      const currentKeys = new Set(currentFiles.map(getFileKey));
-      const newFiles = textFiles.filter((file) => {
-        const key = getFileKey(file);
+    const datasetOutputs = demoCliDatasetOutputs(outputDirectory);
+    const datasetOutput = datasetOutputs[demoDatasetIndex];
+    if (!datasetOutput) {
+      return;
+    }
 
-        if (currentKeys.has(key)) {
-          return false;
-        }
+    const timeoutId = window.setTimeout(() => {
+      setAnalysisOutput((currentOutput) => `${currentOutput}\n\n${datasetOutput.output}`);
 
-        currentKeys.add(key);
-        return true;
+      const nextDataset = datasetOutputs[demoDatasetIndex + 1];
+      if (nextDataset) {
+        setAnalysisOutput(
+          (currentOutput) =>
+            `${currentOutput}\n\n${getLocaleCopy(locale).demoProcessingDataset(nextDataset.dataset)}`,
+        );
+        setDemoDatasetIndex(demoDatasetIndex + 1);
+      } else {
+        setDemoDatasetIndex(null);
+        setAnalysisState("complete");
+        setAnalysisStats({
+          datasets: datasetOutputs.length,
+          rowsProcessed: demoEncounters.length,
+          durationMs: Math.max(Math.round(performance.now() - (demoStartedAtRef.current ?? 0)), 1),
+        });
+        demoStartedAtRef.current = null;
+      }
+    }, datasetOutput.durationMs);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [analysisState, demoDatasetIndex, isDesktopApp, locale, outputDirectory]);
+
+  const chooseDirectory = async (target: "input" | "output") => {
+    try {
+      const selectedDirectory = await open({
+        directory: true,
+        multiple: false,
+        title: target === "input" ? copy.selectInputFolder : copy.selectOutputFolder,
       });
 
-      return [...currentFiles, ...newFiles];
-    });
-    setUploadMessage(ignoredFiles ? "ignored" : "updated");
+      if (typeof selectedDirectory !== "string") {
+        return;
+      }
+
+      if (target === "input") {
+        setInputDirectory(selectedDirectory);
+      } else {
+        setOutputDirectory(selectedDirectory);
+      }
+
+      setAnalysisState("ready");
+      setAnalysisOutput("");
+      setAnalysisError("");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      setAnalysisState("error");
+      setAnalysisError(`${copy.analysisFailed}: ${message}`);
+    }
   };
 
-  const removeFile = (fileToRemove: File) => {
-    setFiles((currentFiles) =>
-      currentFiles.filter((file) => getFileKey(file) !== getFileKey(fileToRemove)),
-    );
+  const runAnalysis = async () => {
+    setAnalysisState("running");
+    setAnalysisError("");
+    setAnalysisStats(null);
+    demoStartedAtRef.current = performance.now();
+
+    if (!isDesktopApp) {
+      const datasetOutputs = demoCliDatasetOutputs(outputDirectory);
+      const [firstDataset] = datasetOutputs;
+      if (!firstDataset) {
+        setAnalysisError(copy.analysisFailed);
+        setAnalysisState("error");
+        return;
+      }
+
+      setEncounters(demoEncounters);
+      setAnalysisOutput(`${demoCliHeader}\n\n${copy.demoProcessingDataset(firstDataset.dataset)}`);
+      setDemoDatasetIndex(0);
+      return;
+    }
+
+    setAnalysisOutput("");
+    setEncounters([]);
+
+    let stopListening: (() => void) | undefined;
+
+    try {
+      setAnalysisOutput(copy.analysisStarting);
+      stopListening = await listen<string>("analysis-output", (event) => {
+        setAnalysisOutput((currentOutput) =>
+          currentOutput ? `${currentOutput}\n${event.payload}` : event.payload,
+        );
+      });
+
+      const result = await invoke<AnalysisResult>("run_analysis", {
+        inputDirectory,
+        outputDirectory,
+      });
+      setAnalysisOutput(result.output);
+      setEncounters(result.encounters);
+      setAnalysisStats(result.stats);
+      setAnalysisState("complete");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      setAnalysisError(message);
+      setAnalysisOutput((currentOutput) => `${currentOutput}\n\n${message}`.trim());
+      setAnalysisState("error");
+    } finally {
+      stopListening?.();
+    }
   };
 
-  const updateSettings = (setting: Partial<AnalysisSettings>) => {
-    setSettings((currentSettings) => ({ ...currentSettings, ...setting }));
+  const revealDirectory = async (target: "input" | "output") => {
+    const directory = target === "input" ? inputDirectory : outputDirectory;
+
+    try {
+      await invoke("reveal_directory", { directory });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      setAnalysisError(`${copy.revealInExplorerFailed}: ${message}`);
+    }
   };
+
+  let statusMessage = copy.analysisReady;
+
+  if (analysisState === "running") {
+    statusMessage = copy.analysisRunning;
+  } else if (analysisState === "complete") {
+    statusMessage = copy.analysisComplete;
+  } else if (analysisState === "error") {
+    statusMessage = copy.analysisFailed;
+  } else if (desktopOnly) {
+    statusMessage = copy.demoDataStatus;
+  }
 
   return (
     <FluentProvider theme={spacecomTheme}>
       <div className="app-shell">
-        <AppHeader locale={locale} onLocaleChange={setLocale} copy={copy} />
+        <AppHeader
+          copy={copy}
+          isDesktopApp={isDesktopApp}
+          locale={locale}
+          onLocaleChange={setLocale}
+        />
         <main className="dashboard-main">
           <section className="overview-row" aria-label={copy.overviewLabel}>
-            <OverviewBanner fileCount={files.length} copy={copy} />
+            <OverviewBanner copy={copy} />
           </section>
           <section className="workbench" aria-label={copy.workspaceLabel}>
             <aside className="setup-column">
-              <DatasetImportPanel
-                copy={copy}
-                files={files}
-                onAddFiles={addFiles}
-                onRemoveFile={removeFile}
-                uploadMessage={uploadMessage}
-              />
               <AnalysisSettingsPanel
                 copy={copy}
-                fileCount={files.length}
-                onUpdate={updateSettings}
-                settings={settings}
+                desktopOnly={desktopOnly}
+                errorMessage={analysisError}
+                inputDirectory={inputDirectory}
+                isRunning={analysisState === "running"}
+                onChooseInputDirectory={() => chooseDirectory("input")}
+                onChooseOutputDirectory={() => chooseDirectory("output")}
+                onRevealDirectory={revealDirectory}
+                onRunAnalysis={runAnalysis}
+                outputDirectory={outputDirectory}
+                statusMessage={statusMessage}
               />
             </aside>
             <WorkspacePanel
-              activeView={activeView}
               copy={copy}
-              fileCount={files.length}
-              onChangeView={setActiveView}
-              onSearchChange={setSearchValue}
-              onSelectFilter={setResultFilter}
-              resultFilter={resultFilter}
-              searchValue={searchValue}
+              encounters={encounters}
+              isAnalysisRunning={analysisState === "running"}
+              isMockData={desktopOnly}
+              output={analysisOutput}
+              statusMessage={statusMessage}
             />
           </section>
         </main>
-        <StatusBar copy={copy} fileCount={files.length} settings={settings} />
+        <StatusBar
+          copy={copy}
+          encounterCount={encounters.length}
+          locale={locale}
+          stats={analysisStats}
+          statusMessage={statusMessage}
+        />
       </div>
     </FluentProvider>
   );

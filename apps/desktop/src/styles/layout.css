@@ -18,36 +18,53 @@
   color: var(--colorNeutralForeground1);
 }
 
+.app-shell .fui-Icon {
+  stroke: currentColor;
+  stroke-width: 0.35px;
+  paint-order: stroke fill;
+}
+
 .dashboard-main {
+  --banner-height: 140px;
+
   display: grid;
   min-width: 0;
   min-height: 0;
   grid-row: 2;
   grid-column: 1;
-  grid-template-rows: 140px minmax(0, 1fr);
+  grid-template-columns: minmax(300px, 0.625fr) minmax(0, 1fr);
+  grid-template-rows: var(--banner-height) minmax(0, 1fr);
   gap: 10px;
   padding: 8px 14px 14px;
 }
 
-.overview-row,
-.workbench,
+/* El banner solo cubre la columna izquierda; el panel de trabajo arranca
+   a su derecha desde arriba para dar más espacio al mapa y la tabla. */
+.overview-row {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  grid-column: 1;
+  grid-row: 1;
+  gap: 12px;
+}
+
+.workbench {
+  display: contents;
+}
+
 .setup-column {
   display: grid;
   min-width: 0;
   min-height: 0;
+  grid-column: 1;
+  grid-row: 2;
   gap: 12px;
 }
 
-.overview-row {
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.workbench {
-  grid-template-columns: minmax(300px, 0.625fr) minmax(0, 1fr);
-}
-
-.setup-column {
-  grid-template-rows: minmax(0, 1.1fr) minmax(190px, 0.9fr);
+.workbench .workspace-panel {
+  grid-column: 2;
+  grid-row: 1 / span 2;
 }
 
 .app-shell :where(.panel, .overview-banner) {
@@ -61,6 +78,7 @@
 }
 
 .app-shell :where(.panel) {
+  border-radius: 12px;
   background-color: var(--colorNeutralBackground1);
 }
 
@@ -84,23 +102,9 @@
     padding: 8px 10px 10px;
   }
 
-  .overview-row {
-    margin-left: 2px;
-  }
-
   .overview-row,
-  .workbench,
   .setup-column {
     gap: 9px;
-  }
-
-  .setup-column {
-    gap: 10px;
-  }
-
-  .workbench {
-    grid-template-columns: minmax(270px, 0.625fr) minmax(0, 1fr);
-    gap: 8px;
   }
 }
 
@@ -110,13 +114,9 @@
   }
 
   .dashboard-main {
-    grid-template-rows: 132px minmax(0, 1fr);
+    --banner-height: 132px;
     gap: 10px;
     padding-top: 6px;
     padding-bottom: 10px;
-  }
-
-  .setup-column {
-    grid-template-rows: minmax(0, 1.1fr) minmax(174px, 0.9fr);
   }
 }

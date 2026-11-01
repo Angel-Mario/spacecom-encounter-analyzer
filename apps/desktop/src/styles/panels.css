@@ -1,9 +1,11 @@
 .panel {
   display: flex;
+  min-width: 0;
+  min-height: 0;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   overflow: hidden;
-  padding: 12px;
+  padding: 14px;
 }
 
 .panel-heading {
@@ -19,167 +21,15 @@
   flex: 1;
 }
 
-.step-number {
-  display: inline-grid;
-  width: 24px;
-  height: 24px;
-  flex: none;
-  place-items: center;
-  border-radius: 50%;
-  background: linear-gradient(145deg, #fe5056, #c70008);
-  box-shadow: 0 3px 9px rgb(199 0 8 / 20%);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.panel-count {
-  min-width: 24px;
-  justify-content: center;
-}
-
-.drop-area {
-  display: flex;
-  min-height: 126px;
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  overflow: hidden;
-  border: 1px dashed #efa7bd;
-  border-radius: 12px;
-  background:
-    radial-gradient(ellipse at 50% 0%, rgb(255 226 237 / 75%), transparent 70%),
-    var(--colorNeutralBackground1);
-  text-align: center;
-  transition:
-    border-color 120ms ease,
-    background-color 120ms ease;
-}
-
-.drop-area:hover {
-  border-color: #f04a70;
-  background-color: #fff9fb;
-}
-
-.drop-area .fui-Button {
-  min-width: 192px;
-  min-height: 34px;
-  border-radius: 6px;
-  background: #ff1f2b;
-  box-shadow: none;
-}
-
-.drop-icon {
-  width: 38px;
-  height: 38px;
-  margin-bottom: 3px;
-  color: #ed1742;
-  filter: drop-shadow(0 4px 5px rgb(237 23 66 / 16%));
-}
-
-.drop-title {
-  color: var(--colorNeutralForeground1);
-}
-
-.drop-subtitle {
-  color: var(--spacecom-muted);
-}
-
-.drop-hint {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  margin: 4px 0 5px;
-  color: var(--spacecom-muted);
-  font-size: 11px;
-}
-
-.drop-hint svg {
-  width: 14px;
-  height: 14px;
-}
-
-.file-list {
-  min-height: 34px;
-  flex: none;
-  overflow: hidden;
-}
-
-.file-list-empty {
-  display: block;
-  overflow: hidden;
-  color: var(--spacecom-muted);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.file-list-heading {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 3px;
-}
-
-.file-list-heading > span:last-child {
-  overflow: hidden;
-  color: var(--spacecom-muted);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.dataset-list {
-  display: flex;
-  max-height: 72px;
-  flex-direction: column;
-  gap: 1px;
-  overflow: auto;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.dataset-item {
-  display: flex;
-  min-width: 0;
-  min-height: 28px;
-  align-items: center;
-  gap: 7px;
-  padding-left: 3px;
-  border-radius: 6px;
-}
-
-.dataset-item > svg {
-  width: 16px;
-  height: 16px;
-  flex: none;
-  color: #c70008;
-}
-
-.dataset-name {
-  min-width: 0;
-  flex: 1;
-  overflow: hidden;
-  font-size: 12px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.dataset-item > span:nth-last-child(2) {
-  flex: none;
-  color: var(--spacecom-muted);
-}
-
-.dataset-item > button {
-  flex: none;
-}
-
 .settings-panel {
+  position: relative;
   border-color: #f3d9e2;
+  /* Imagen generada (círculos rosas) anclada a la base; la capa superior funde
+     su zona superior hacia blanco para una transición sin costura. */
   background:
-    linear-gradient(145deg, rgb(255 239 245 / 88%), transparent 70%), var(--colorNeutralBackground1);
+    linear-gradient(180deg, #ffffff 0%, #ffffff 46%, rgb(255 255 255 / 0%) 62%),
+    url("../assets/sidebar-bg.png") center bottom / cover no-repeat,
+    var(--colorNeutralBackground1);
 }
 
 .settings-panel:focus {
@@ -187,59 +37,83 @@
   outline-offset: 2px;
 }
 
-.settings-fields {
+.directory-fields {
   display: grid;
-  min-height: 0;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 9px;
+  gap: 12px;
 }
 
-.setting-field {
-  display: flex;
+.directory-field {
+  display: grid;
   min-width: 0;
-  flex-direction: column;
-  gap: 5px;
+  gap: 7px;
 }
 
-.setting-field label {
+.directory-path-row {
   display: flex;
   min-width: 0;
   align-items: center;
   gap: 4px;
-  overflow: hidden;
+}
+
+.directory-field h3 {
   color: var(--spacecom-muted);
-  font-size: 11px;
+}
+
+.directory-path {
+  display: block;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  padding: 7px 9px;
+  border: 1px solid var(--spacecom-outline);
+  border-radius: 5px;
+  background-color: var(--colorNeutralBackground1);
+  color: var(--colorNeutralForeground1);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.setting-field label svg {
-  width: 15px;
-  height: 15px;
+.directory-path-row .fui-Button {
   flex: none;
-}
-
-.setting-field select {
-  min-width: 0;
 }
 
 .start-analysis-button {
   width: 100%;
   min-height: 38px;
   justify-content: center;
+  margin-top: auto;
   border-radius: 6px;
-  background: #ff1f2b;
-  box-shadow: none;
+  background: linear-gradient(105deg, #b90006 0%, #ec1220 70%, #ff2f38 100%);
+  box-shadow: 0 2px 6px rgb(155 0 8 / 22%);
 }
 
-.start-analysis-button:disabled {
-  background: #f0f0f0;
-  box-shadow: none;
+.start-analysis-button:hover {
+  background: linear-gradient(105deg, #c9050c 0%, #fb2030 70%, #ff4750 100%);
 }
 
 .settings-note {
+  display: inline-flex;
+  min-height: 16px;
+  flex: none;
+  align-items: flex-start;
+  gap: 6px;
   color: var(--spacecom-muted);
-  text-align: center;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+  text-align: left;
+  justify-content: center;
+}
+
+.settings-note-complete {
+  justify-content: flex-start;
+}
+
+.settings-note-complete svg {
+  flex: none;
+  margin-top: 1px;
+  width: 15px;
+  height: 15px;
+  color: #d9040b;
 }
 
 @media (max-width: 1120px) {
@@ -247,36 +121,15 @@
     gap: 11px;
     padding: 10px 13px;
   }
-
-  .settings-fields {
-    gap: 5px;
-  }
-
-  .setting-field label {
-    font-size: 10px;
-  }
 }
 
 @media (max-height: 760px) {
   .panel {
-    gap: 7px;
+    gap: 9px;
     padding: 9px;
   }
 
-  .drop-area {
-    min-height: 102px;
-  }
-
-  .drop-icon {
-    width: 26px;
-    height: 26px;
-  }
-
-  .file-list {
-    min-height: 26px;
-  }
-
-  .dataset-list {
-    max-height: 48px;
+  .directory-fields {
+    gap: 8px;
   }
 }

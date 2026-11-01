@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vp dev",
-    "build": "tsc && vp build",
+    "dev": "pnpm --filter @spacecom-encounter-analyzer/engine build && pnpm --filter @spacecom-encounter-analyzer/cli build && vp dev",
+    "build": "pnpm --filter @spacecom-encounter-analyzer/engine build && pnpm --filter @spacecom-encounter-analyzer/cli build && tsc && vp build",
     "preview": "vp preview",
     "tauri": "tauri"
   },
@@ -12,7 +12,9 @@
     "@fluentui/react-components": "^9.75.0",
     "@fluentui/react-icons": "^2.0.345",
     "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-dialog": "^2",
     "@tauri-apps/plugin-opener": "^2",
+    "maplibre-gl": "^6.16.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },

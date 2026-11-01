@@ -66,7 +66,7 @@ pnpm start -- process-all --unsorted cancel
 pnpm start -- benchmark --input ./datasets/inputs --unsorted external
 ```
 
-`--unsorted` aceita `prompt` (padrão), `external` ou `cancel`. Em um terminal não interativo, use `external` ou `cancel`.
+`--unsorted` aceita `prompt` (padrão), `auto`, `external` ou `cancel`. `auto` tenta primeiro o processamento paralelo e usa ordenação em disco apenas se os horários estiverem fora de ordem, sem perguntar; é adequado para aplicações não interativas. `external` sempre usa ordenação em disco.
 
 ## Variáveis de ambiente
 
@@ -74,24 +74,24 @@ Os valores compartilhados por todos os comandos são declarados no `.env.schema`
 
 Para personalizar, copie `.env.example` para um arquivo `.env` (ignorado pelo Git) ao lado do `.env.schema` ou exporte as variáveis no shell. Opções explícitas da CLI sempre têm precedência sobre os valores do ambiente:
 
-| Variável                     | Padrão                          | Usada por                                                                                   |
-| ---------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------- |
-| `SPACECOM_INPUT_DIR`         | `datasets/inputs`               | Diretório de entrada padrão de `process-all` e `benchmark`.                                 |
-| `SPACECOM_OUTPUT_DIR`        | `datasets/outputs`              | Diretório de saída padrão de `process` e `process-all`.                                     |
-| `SPACECOM_UNSORTED_STRATEGY` | `prompt`                        | Padrão de `--unsorted` quando a flag está ausente; aceita `prompt`, `external` ou `cancel`. |
-| `SPACECOM_CHUNK_BYTES`       | `8388608` (8 MiB)               | Tamanho-alvo, em bytes, de cada faixa entregue a um worker paralelo do motor.               |
-| `SPACECOM_MAX_WORKERS`       | `os.availableParallelism() - 1` | Número máximo de threads de worker paralelas por dataset.                                   |
+| Variável                     | Padrão                          | Usada por                                                                                           |
+| ---------------------------- | ------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `SPACECOM_INPUT_DIR`         | `datasets/inputs`               | Diretório de entrada padrão de `process-all` e `benchmark`.                                         |
+| `SPACECOM_OUTPUT_DIR`        | `datasets/outputs`              | Diretório de saída padrão de `process` e `process-all`.                                             |
+| `SPACECOM_UNSORTED_STRATEGY` | `prompt`                        | Padrão de `--unsorted` quando a flag está ausente; aceita `prompt`, `auto`, `external` ou `cancel`. |
+| `SPACECOM_CHUNK_BYTES`       | `8388608` (8 MiB)               | Tamanho-alvo, em bytes, de cada faixa entregue a um worker paralelo do motor.                       |
+| `SPACECOM_MAX_WORKERS`       | `os.availableParallelism() - 1` | Número máximo de threads de worker paralelas por dataset.                                           |
 
 `SPACECOM_CHUNK_BYTES` e `SPACECOM_MAX_WORKERS` ajustam o processamento paralelo do motor e são ignoradas quando o chamador passa opções explícitas (veja o [README do motor](../../packages/engine/README.md)). Valores inválidos são rejeitados pelo varlock antes do processo iniciar.
 
 ## Opções e padrões
 
-| Opção                     | Comandos                           | Padrão             | Descrição                                                             |
-| ------------------------- | ---------------------------------- | ------------------ | --------------------------------------------------------------------- |
-| `--input <diretório>`     | `process-all`, `benchmark`         | `datasets/inputs`  | Diretório com os conjuntos de dados `.txt`.                           |
-| `--output <diretório>`    | `process`, `process-all`           | `datasets/outputs` | Diretório para os arquivos JSON de encontros.                         |
-| `--unsorted <estratégia>` | Todos os comandos de processamento | `prompt`           | Ação para timestamps fora de ordem: `prompt`, `external` ou `cancel`. |
-| `--help`                  | Qualquer                           | —                  | Exibe a ajuda dos comandos.                                           |
+| Opção                     | Comandos                           | Padrão             | Descrição                                                                     |
+| ------------------------- | ---------------------------------- | ------------------ | ----------------------------------------------------------------------------- |
+| `--input <diretório>`     | `process-all`, `benchmark`         | `datasets/inputs`  | Diretório com os conjuntos de dados `.txt`.                                   |
+| `--output <diretório>`    | `process`, `process-all`           | `datasets/outputs` | Diretório para os arquivos JSON de encontros.                                 |
+| `--unsorted <estratégia>` | Todos os comandos de processamento | `prompt`           | Ação para timestamps fora de ordem: `prompt`, `auto`, `external` ou `cancel`. |
+| `--help`                  | Qualquer                           | —                  | Exibe a ajuda dos comandos.                                                   |
 
 O comando `benchmark` não aceita `--output`, pois não grava arquivos.
 

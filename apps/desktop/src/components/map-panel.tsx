@@ -49,7 +49,7 @@ const MapPanel = ({ copy }: MapPanelProps) => (
             <span className="map-route" />
           </div>
         </div>
-        <Text as="h3" size={400} weight="semibold">
+        <Text as="h3" size={400} weight="bold">
           {copy.noMapResults}
         </Text>
         <Text size={200}>{copy.importToVisualize}</Text>

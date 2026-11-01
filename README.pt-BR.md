@@ -130,7 +130,7 @@ Execute o mesmo processamento sem gravar arquivos JSON e exiba métricas de temp
 pnpm start -- benchmark
 ```
 
-Se os horários estiverem fora de ordem, a CLI perguntará se deve tentar novamente usando ordenação externa em disco. Use `--unsorted external` para selecionar essa alternativa sem a pergunta ou `--unsorted cancel` para cancelar.
+Se os horários estiverem fora de ordem, a CLI perguntará se deve tentar novamente usando ordenação externa em disco. Use `--unsorted auto` para tentar novamente apenas quando necessário, sem perguntar; `--unsorted external` para sempre usar a ordenação em disco; ou `--unsorted cancel` para cancelar.
 
 Os padrões desses comandos podem ser configurados no [`.env.schema`](.env.schema) declarado com varlock; veja as [variáveis de ambiente da CLI](apps/cli/README.pt-BR.md#variáveis-de-ambiente).
 

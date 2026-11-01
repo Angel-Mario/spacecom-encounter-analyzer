@@ -58,7 +58,7 @@ const DatasetImportPanel = ({
     <Card className="panel import-panel">
       <div className="panel-heading">
         <span className="step-number">1</span>
-        <Text as="h2" weight="semibold">
+        <Text as="h2" weight="bold">
           {copy.importHeading}
         </Text>
         <Badge appearance="tint" className="panel-count">
