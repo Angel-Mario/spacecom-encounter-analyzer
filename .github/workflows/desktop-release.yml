@@ -28,14 +28,6 @@ jobs:
             runner: ubuntu-22.04
             bundles: deb,appimage
     runs-on: ${{ matrix.runner }}
-    env:
-      APPLE_CERTIFICATE: ${{ startsWith(matrix.runner, 'macos-') && secrets.APPLE_CERTIFICATE || '' }}
-      APPLE_CERTIFICATE_PASSWORD: ${{ startsWith(matrix.runner, 'macos-') && secrets.APPLE_CERTIFICATE_PASSWORD || '' }}
-      APPLE_ID: ${{ startsWith(matrix.runner, 'macos-') && secrets.APPLE_ID || '' }}
-      APPLE_PASSWORD: ${{ startsWith(matrix.runner, 'macos-') && secrets.APPLE_PASSWORD || '' }}
-      APPLE_SIGNING_IDENTITY: ${{ startsWith(matrix.runner, 'macos-') && secrets.APPLE_SIGNING_IDENTITY || '' }}
-      APPLE_TEAM_ID: ${{ startsWith(matrix.runner, 'macos-') && secrets.APPLE_TEAM_ID || '' }}
-      KEYCHAIN_PASSWORD: ${{ startsWith(matrix.runner, 'macos-') && secrets.KEYCHAIN_PASSWORD || '' }}
     steps:
       - name: Check out source
         uses: actions/checkout@v4
@@ -50,38 +42,6 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
-
-      - name: Validate Apple signing configuration
-        if: runner.os == 'macOS'
-        run: |
-          configured=false
-          for variable in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_ID APPLE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_TEAM_ID KEYCHAIN_PASSWORD; do
-            if [ -n "${!variable}" ]; then
-              configured=true
-            fi
-          done
-          if [ "$configured" = "false" ]; then
-            echo "Apple signing is not configured; macOS builds will be unsigned."
-            exit 0
-          fi
-          for variable in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_ID APPLE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_TEAM_ID KEYCHAIN_PASSWORD; do
-            if [ -z "${!variable}" ]; then
-              echo "Missing required Apple signing secret: $variable"
-              exit 1
-            fi
-          done
-
-      - name: Import Apple Developer certificate
-        if: runner.os == 'macOS' && env.APPLE_CERTIFICATE != ''
-        run: |
-          printf '%s' "$APPLE_CERTIFICATE" | base64 --decode > certificate.p12
-          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
-          security set-keychain-settings -t 3600 -u build.keychain
-          security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
-          rm certificate.p12
 
       - name: Install Linux build dependencies
         if: runner.os == 'Linux'
@@ -117,11 +77,6 @@ jobs:
 
       - name: Build desktop installers
         run: pnpm --filter @spacecom-encounter-analyzer/desktop tauri build --bundles ${{ matrix.bundles }}
-        env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
       - name: Upload installers
         uses: actions/upload-artifact@v4
@@ -150,7 +105,7 @@ jobs:
           draft: true
           generate_release_notes: true
           body: |
-            ${{ secrets.APPLE_CERTIFICATE != '' && secrets.APPLE_CERTIFICATE_PASSWORD != '' && secrets.APPLE_SIGNING_IDENTITY != '' && secrets.KEYCHAIN_PASSWORD != '' && secrets.APPLE_ID != '' && secrets.APPLE_PASSWORD != '' && secrets.APPLE_TEAM_ID != '' && 'macOS DMG files are signed and notarized with the configured Apple Developer credentials.' || '**macOS:** These DMG files are not signed or notarized. Gatekeeper may block the app; do not distribute them as production-ready downloads until Apple signing and notarization are configured.' }}
+            **macOS:** DMG files are not signed or notarized. macOS Gatekeeper may block the app; users may need to allow it manually in System Settings.
 
             **Windows:** Installers are unsigned and may trigger SmartScreen warnings.
           files: |

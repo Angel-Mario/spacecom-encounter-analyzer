@@ -1,6 +1,6 @@
 {
   "name": "@spacecom-encounter-analyzer/desktop",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "type": "module",
   "scripts": {
     "dev": "pnpm --filter @spacecom-encounter-analyzer/engine build && pnpm --filter @spacecom-encounter-analyzer/cli build && vp dev",
