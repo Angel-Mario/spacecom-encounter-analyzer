@@ -14,17 +14,22 @@ The benchmark command reports a summary for each dataset without writing JSON fi
 
 ![Example benchmark output](docs/images/benchmark.png)
 
+As an extra beyond the challenge requirements, I also built a cross-platform desktop UI with Tauri. The collage shows its results table, interactive map, encounter details, and CLI output:
+
+![Desktop app collage showing results, map, encounter details, and CLI output](docs/images/desktop-ui-collage.png)
+
 ## Current architecture
 
 ```text
 apps/
   cli/       Node.js CLI
+  desktop/   Cross-platform desktop UI built with React and Tauri
 packages/
   config/    Shared TypeScript configuration
   engine/    Reusable engine package, domain types, and dataset infrastructure
 ```
 
-For component-specific details, see the [CLI README](apps/cli/README.md) and the [engine README](packages/engine/README.md).
+For component-specific details, see the [CLI README](apps/cli/README.md), the [desktop app README](apps/desktop/README.md), and the [engine README](packages/engine/README.md).
 
 ## Challenge rules and solution
 
@@ -153,6 +158,25 @@ Run the compiled CLI after building:
 ```bash
 pnpm --filter @spacecom-encounter-analyzer/cli start
 ```
+
+## Desktop app releases
+
+Desktop installers are built for Windows x64 (`.msi` and `.exe`), macOS Intel and Apple silicon (`.dmg`), and Linux x64 (`.deb` and `.AppImage`). The installers include the CLI and a Node.js runtime, so end users do not need Node.js or a source checkout. The first launch creates input and output folders in the app's user data directory; users can also choose other folders.
+
+To publish a release, update the desktop version consistently in `apps/desktop/package.json`, `apps/desktop/src-tauri/tauri.conf.json`, and `apps/desktop/src-tauri/Cargo.toml`, commit and push those changes, then push a matching version tag. For the current `0.1.0` version:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The **Desktop release** GitHub Actions workflow builds each platform and creates a draft GitHub Release with the installers attached. Review and publish the draft when the artifacts are ready. The workflow checks that the tag and all three version fields match.
+
+The workflow can sign and notarize macOS builds when the repository has the required Apple Developer secrets configured (`APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`, `KEYCHAIN_PASSWORD`, `APPLE_ID`, `APPLE_PASSWORD`, and `APPLE_TEAM_ID`). Without them, the generated DMGs are unsigned and unnotarized, and Gatekeeper may block the app; do not publish those DMGs as production-ready downloads. Windows installers are unsigned and may trigger SmartScreen. Linux `.deb` packages declare their system dependencies; `.AppImage` users may need a compatible WebKitGTK runtime.
+
+## License
+
+This project is distributed under the [MIT License](LICENSE).
 
 ## Type checking and code quality
 

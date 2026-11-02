@@ -6,6 +6,7 @@
     "dev": "pnpm --filter @spacecom-encounter-analyzer/engine build && pnpm --filter @spacecom-encounter-analyzer/cli build && vp dev",
     "build": "pnpm --filter @spacecom-encounter-analyzer/engine build && pnpm --filter @spacecom-encounter-analyzer/cli build && tsc && vp build",
     "preview": "vp preview",
+    "prepare:bundle": "node scripts/prepare-bundle.mjs",
     "tauri": "tauri"
   },
   "dependencies": {

@@ -1,6 +1,7 @@
 import { Button, Card, Text, Tooltip } from "@fluentui/react-components";
 import {
   CheckmarkCircleFilled,
+  FolderArrowRightRegular,
   FolderOpenRegular,
   PlayRegular,
   SettingsRegular,
@@ -62,7 +63,7 @@ const AnalysisSettingsPanel = ({
               appearance="subtle"
               aria-label={copy.revealInExplorer}
               disabled={isRunning || desktopOnly}
-              icon={<FolderOpenRegular />}
+              icon={<FolderArrowRightRegular />}
               onClick={() => onRevealDirectory("input")}
               shape="square"
               size="small"
@@ -92,7 +93,7 @@ const AnalysisSettingsPanel = ({
               appearance="subtle"
               aria-label={copy.revealInExplorer}
               disabled={isRunning || desktopOnly}
-              icon={<FolderOpenRegular />}
+              icon={<FolderArrowRightRegular />}
               onClick={() => onRevealDirectory("output")}
               shape="square"
               size="small"

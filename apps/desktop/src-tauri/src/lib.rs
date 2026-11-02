@@ -6,7 +6,8 @@ use std::process::{Command, Stdio};
 use std::time::Instant;
 
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Emitter};
+use tauri::path::BaseDirectory;
+use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_opener::OpenerExt;
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -40,6 +41,91 @@ struct AnalysisResult {
     output: String,
     encounters: Vec<Encounter>,
     stats: AnalysisStats,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct DefaultDirectories {
+    input_directory: String,
+    output_directory: String,
+}
+
+fn workspace_root() -> Result<PathBuf, String> {
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .ancestors()
+        .nth(3)
+        .map(Path::to_path_buf)
+        .ok_or_else(|| "Could not locate the workspace root.".to_owned())
+}
+
+fn default_data_root(app: &AppHandle) -> Result<PathBuf, String> {
+    if cfg!(debug_assertions) {
+        return workspace_root();
+    }
+
+    app.path()
+        .app_data_dir()
+        .map_err(|error| format!("Could not locate the application data directory: {error}"))
+}
+
+fn default_directories(app: &AppHandle) -> Result<DefaultDirectories, String> {
+    let datasets_directory = default_data_root(app)?.join("datasets");
+    let input_directory = datasets_directory.join("inputs");
+    let output_directory = datasets_directory.join("outputs");
+
+    fs::create_dir_all(&input_directory).map_err(|error| {
+        format!(
+            "Could not create the input directory \"{}\": {error}",
+            input_directory.display()
+        )
+    })?;
+    fs::create_dir_all(&output_directory).map_err(|error| {
+        format!(
+            "Could not create the output directory \"{}\": {error}",
+            output_directory.display()
+        )
+    })?;
+
+    Ok(DefaultDirectories {
+        input_directory: input_directory.display().to_string(),
+        output_directory: output_directory.display().to_string(),
+    })
+}
+
+fn analysis_runtime(app: &AppHandle) -> Result<(PathBuf, PathBuf, PathBuf), String> {
+    if cfg!(debug_assertions) {
+        let root = workspace_root()?;
+        let cli_entry = root.join("apps").join("cli").join("dist").join("index.mjs");
+        return Ok((root.clone(), cli_entry, PathBuf::from("node")));
+    }
+
+    let cli_entry = app
+        .path()
+        .resolve("resources/cli/dist/index.mjs", BaseDirectory::Resource)
+        .map_err(|error| format!("Could not locate the bundled CLI entry point: {error}"))?;
+    let node_executable = if cfg!(windows) { "node.exe" } else { "node" };
+    let node_runtime = app
+        .path()
+        .resolve(
+            Path::new("resources").join("runtime").join(node_executable),
+            BaseDirectory::Resource,
+        )
+        .map_err(|error| format!("Could not locate the bundled Node.js runtime: {error}"))?;
+
+    if !node_runtime.is_file() {
+        return Err(format!(
+            "The bundled Node.js runtime is missing at \"{}\".",
+            node_runtime.display()
+        ));
+    }
+
+    let cli_working_directory = cli_entry
+        .parent()
+        .and_then(Path::parent)
+        .ok_or_else(|| "Could not locate the bundled CLI directory.".to_owned())?
+        .to_path_buf();
+
+    Ok((cli_working_directory, cli_entry, node_runtime))
 }
 
 fn output_file_name(dataset_path: &Path) -> Result<String, String> {
@@ -143,41 +229,44 @@ async fn run_analysis(
 ) -> Result<AnalysisResult, String> {
     tauri::async_runtime::spawn_blocking(move || {
         let started_at = Instant::now();
-        let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
-            .ancestors()
-            .nth(3)
-            .ok_or_else(|| "Could not locate the workspace root.".to_owned())?;
-        let cli_entry = workspace_root.join("apps").join("cli").join("dist").join("index.mjs");
+        let (cli_working_directory, cli_entry, node_runtime) = analysis_runtime(&app)?;
+        let data_root = default_data_root(&app)?;
 
         if !cli_entry.is_file() {
             return Err(
-                "The CLI build is missing. Restart the desktop app to build it, or run `pnpm build:cli`."
+                "The CLI build is missing. Rebuild the desktop app before running analysis."
                     .to_owned(),
             );
         }
 
-        let resolved_input_directory = resolve_directory(workspace_root, Path::new(&input_directory));
+        let resolved_input_directory =
+            resolve_directory(&data_root, Path::new(&input_directory));
         let resolved_output_directory =
-            resolve_directory(workspace_root, Path::new(&output_directory));
+            resolve_directory(&data_root, Path::new(&output_directory));
         let dataset_paths = dataset_paths(&resolved_input_directory)?;
+        if dataset_paths.is_empty() {
+            return Err(format!(
+                "No .txt datasets found in \"{}\". Add dataset files to this input folder and try again.",
+                resolved_input_directory.display()
+            ));
+        }
+
         let mut rows_processed = 0;
         for dataset_path in &dataset_paths {
             rows_processed += count_dataset_rows(dataset_path)?;
         }
-        let mut child = Command::new("node")
+        let mut child = Command::new(node_runtime)
             .arg(cli_entry)
             .args(["process-all", "--input"])
-            .arg(&input_directory)
+            .arg(&resolved_input_directory)
             .arg("--output")
-            .arg(&output_directory)
+            .arg(&resolved_output_directory)
             .args(["--unsorted", "auto"])
-            .current_dir(workspace_root)
+            .current_dir(&cli_working_directory)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
-            .map_err(|error| {
-                format!("Could not start Node.js to run the CLI. Install Node.js 24.11 or newer. {error}")
-            })?;
+            .map_err(|error| format!("Could not start Node.js to run the CLI: {error}"))?;
 
         let stdout = child
             .stdout
@@ -229,7 +318,10 @@ async fn run_analysis(
             } else {
                 details
             };
-            return Err(format!("CLI exited with status {:?}: {details}", status.code()));
+            return Err(format!(
+                "CLI exited with status {:?}: {details}",
+                status.code()
+            ));
         }
 
         Ok(AnalysisResult {
@@ -247,12 +339,13 @@ async fn run_analysis(
 }
 
 #[tauri::command]
+fn get_default_directories(app: AppHandle) -> Result<DefaultDirectories, String> {
+    default_directories(&app)
+}
+
+#[tauri::command]
 fn reveal_directory(app: AppHandle, directory: String) -> Result<(), String> {
-    let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .ancestors()
-        .nth(3)
-        .ok_or_else(|| "Could not locate the workspace root.".to_owned())?;
-    let resolved = resolve_directory(workspace_root, Path::new(&directory));
+    let resolved = resolve_directory(&default_data_root(&app)?, Path::new(&directory));
 
     if !resolved.is_dir() {
         return Err(format!(
@@ -269,12 +362,8 @@ fn reveal_directory(app: AppHandle, directory: String) -> Result<(), String> {
 #[tauri::command]
 async fn export_report(path: String, content: String) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || {
-        fs::write(&path, content.as_bytes()).map_err(|error| {
-            format!(
-                "Could not write the export to \"{}\": {error}",
-                path
-            )
-        })
+        fs::write(&path, content.as_bytes())
+            .map_err(|error| format!("Could not write the export to \"{}\": {error}", path))
     })
     .await
     .map_err(|error| format!("The export task could not be completed: {error}"))?
@@ -287,6 +376,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             run_analysis,
+            get_default_directories,
             export_report,
             reveal_directory
         ])
@@ -372,6 +462,17 @@ mod tests {
         assert_eq!(
             resolve_directory(Path::new("workspace"), &absolute_directory),
             absolute_directory
+        );
+    }
+
+    #[test]
+    fn returns_no_dataset_paths_for_an_empty_input_directory() {
+        let temporary_directory = TestDirectory::new();
+
+        assert!(
+            dataset_paths(temporary_directory.path())
+                .unwrap()
+                .is_empty()
         );
     }
 

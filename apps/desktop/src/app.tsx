@@ -12,7 +12,7 @@ import WorkspacePanel from "./components/workspace-panel";
 import { getInitialLocale, getLocaleCopy } from "./i18n";
 import type { Locale } from "./i18n";
 import { demoCliDatasetOutputs, demoCliHeader, demoEncounters } from "./mock-data";
-import type { AnalysisResult, AnalysisStats, Encounter } from "./types";
+import type { AnalysisResult, AnalysisStats, DefaultDirectories, Encounter } from "./types";
 
 import "./App.css";
 import "./styles/chrome.css";
@@ -69,6 +69,36 @@ const App = () => {
   }, [locale]);
 
   useEffect(() => {
+    if (!isDesktopApp) {
+      return;
+    }
+
+    let isMounted = true;
+    void (async () => {
+      try {
+        const { inputDirectory: defaultInputDirectory, outputDirectory: defaultOutputDirectory } =
+          await invoke<DefaultDirectories>("get_default_directories");
+        if (isMounted) {
+          setInputDirectory(defaultInputDirectory);
+          setOutputDirectory(defaultOutputDirectory);
+        }
+      } catch (error: unknown) {
+        if (!isMounted) {
+          return;
+        }
+
+        const message = error instanceof Error ? error.message : String(error);
+        setAnalysisError(`${copy.analysisFailed}: ${message}`);
+        setAnalysisState("error");
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [copy.analysisFailed, isDesktopApp]);
+
+  useEffect(() => {
     if (isDesktopApp || analysisState !== "running" || demoDatasetIndex === null) {
       return;
     }
@@ -94,8 +124,8 @@ const App = () => {
         setAnalysisState("complete");
         setAnalysisStats({
           datasets: datasetOutputs.length,
-          rowsProcessed: demoEncounters.length,
           durationMs: Math.max(Math.round(performance.now() - (demoStartedAtRef.current ?? 0)), 1),
+          rowsProcessed: demoEncounters.length,
         });
         demoStartedAtRef.current = null;
       }
