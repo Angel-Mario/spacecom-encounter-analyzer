@@ -78,11 +78,34 @@ jobs:
       - name: Build desktop installers
         run: pnpm --filter @spacecom-encounter-analyzer/desktop tauri build --bundles ${{ matrix.bundles }}
 
-      - name: Upload installers
+      - name: Package portable Windows app
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $portableDirectory = "portable/Spacecom Encounter Analyzer"
+          New-Item -ItemType Directory -Path $portableDirectory -Force | Out-Null
+          Copy-Item "apps/desktop/src-tauri/target/release/desktop.exe" "$portableDirectory/Spacecom Encounter Analyzer.exe"
+          Copy-Item "apps/desktop/src-tauri/resources" "$portableDirectory/resources" -Recurse
+          @"
+          Spacecom Encounter Analyzer (portable)
+
+          Extract this folder and run "Spacecom Encounter Analyzer.exe".
+          Microsoft Edge WebView2 Runtime is required.
+
+          Analizador de Encuentros Espaciales (portable)
+
+          Extrae esta carpeta y ejecuta "Spacecom Encounter Analyzer.exe".
+          Se requiere Microsoft Edge WebView2 Runtime.
+          "@ | Set-Content "$portableDirectory/README.txt"
+          Compress-Archive -Path "$portableDirectory/*" -DestinationPath "portable/Spacecom-Encounter-Analyzer_${env:GITHUB_REF_NAME}_windows-x64_portable.zip"
+
+      - name: Upload build assets
         uses: actions/upload-artifact@v4
         with:
           name: desktop-${{ matrix.name }}
-          path: apps/desktop/src-tauri/target/release/bundle/*/*
+          path: |
+            apps/desktop/src-tauri/target/release/bundle/*/*
+            portable/*.zip
           if-no-files-found: error
           retention-days: 7
 
@@ -99,18 +122,21 @@ jobs:
           path: release-assets
           merge-multiple: true
 
-      - name: Create draft release
+      - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          draft: true
+          draft: false
           generate_release_notes: true
           body: |
             **macOS:** DMG files are not signed or notarized. macOS Gatekeeper may block the app; users may need to allow it manually in System Settings.
+
+            **Windows portable:** Extract the `windows-x64_portable.zip` file and run `Spacecom Encounter Analyzer.exe`. Microsoft Edge WebView2 Runtime is required.
 
             **Windows:** Installers are unsigned and may trigger SmartScreen warnings.
           files: |
             release-assets/**/*.msi
             release-assets/**/*.exe
+            release-assets/**/*.zip
             release-assets/**/*.dmg
             release-assets/**/*.deb
             release-assets/**/*.AppImage
