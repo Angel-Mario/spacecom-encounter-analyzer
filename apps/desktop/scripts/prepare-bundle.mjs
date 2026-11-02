@@ -4,9 +4,7 @@ import {
   copyFileSync,
   existsSync,
   mkdirSync,
-  readFileSync,
   rmSync,
-  writeFileSync,
 } from "node:fs";
 import path from "node:path";
 
@@ -49,14 +47,6 @@ execFileSync(pnpmCommand, pnpmArguments, {
 copyFileSync(
   path.join(repositoryRoot, ".env.schema"),
   path.join(cliDirectory, ".env.schema")
-);
-const cliPackagePath = path.join(cliDirectory, "package.json");
-const cliPackage = JSON.parse(readFileSync(cliPackagePath, "utf-8"));
-delete cliPackage.dependencies["@spacecom-encounter-analyzer/engine"];
-writeFileSync(cliPackagePath, `${JSON.stringify(cliPackage, null, 2)}\n`);
-rmSync(
-  path.join(cliDirectory, "node_modules", "@spacecom-encounter-analyzer"),
-  { force: true, recursive: true }
 );
 copyFileSync(process.execPath, path.join(runtimeDirectory, nodeExecutableName));
 
