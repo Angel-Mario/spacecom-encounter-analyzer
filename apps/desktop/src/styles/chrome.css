@@ -1,0 +1,225 @@
+.app-header {
+  --window-control-width: 46px;
+  --window-controls-width: calc(var(--window-control-width) * 3);
+
+  display: flex;
+  position: relative;
+  min-width: 0;
+  grid-row: 1;
+  grid-column: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px calc(var(--window-controls-width) + 12px) 6px 16px;
+  background:
+    radial-gradient(circle at 60% 0%, rgb(255 255 255 / 70%), transparent 58%),
+    linear-gradient(105deg, rgb(255 234 241 / 78%), rgb(255 248 250 / 75%));
+  user-select: none;
+}
+
+.app-header.is-draggable {
+  cursor: grab;
+}
+
+.app-header.is-draggable:active {
+  cursor: grabbing;
+}
+
+.app-brand,
+.status-item {
+  display: flex;
+  align-items: center;
+}
+
+.app-brand {
+  min-width: 0;
+  gap: 14px;
+}
+
+.header-drag-space {
+  min-width: 0;
+  flex: 1;
+  align-self: stretch;
+}
+
+.brand-mark {
+  display: block;
+  width: 116px;
+  height: auto;
+  flex: none;
+}
+
+.brand-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+  padding-left: 16px;
+  border-left: 1px solid #e2d3d9;
+}
+
+.brand-copy h1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.brand-copy p {
+  color: var(--spacecom-muted);
+}
+
+.header-actions,
+.window-controls {
+  display: flex;
+  flex: none;
+  align-items: center;
+}
+
+.header-actions {
+  align-self: flex-start;
+  height: 36px;
+  margin-top: -10px;
+  gap: 12px;
+}
+
+.header-actions > :first-child {
+  flex: none;
+}
+
+.language-menu-button {
+  min-width: 72px;
+  height: 30px;
+  border: 1px solid var(--spacecom-outline);
+  border-radius: 6px;
+  background-color: rgb(255 255 255 / 54%);
+  color: #45344f;
+  cursor: pointer;
+}
+
+.language-menu-button:hover {
+  border-color: #e8c1d0;
+  background-color: rgb(255 255 255 / 90%);
+}
+
+.window-controls {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 36px;
+  gap: 0;
+}
+
+.window-controls .window-control {
+  width: var(--window-control-width);
+  min-width: var(--window-control-width);
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  color: #45344f;
+  cursor: default;
+}
+
+.window-controls .window-control svg {
+  transition: transform 120ms ease;
+}
+
+/* Estados hover/active para minimizar, maximizar y restaurar (el botón de
+   cerrar conserva su estilo rojo característico). */
+.window-controls .window-control,
+.window-controls .window-control:hover,
+.window-controls .window-control:active {
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.window-controls .window-control:hover {
+  background-color: rgb(223 190 202 / 35%);
+  color: #21182b;
+}
+
+.window-controls .window-control:hover svg {
+  transform: scale(1.08);
+}
+
+.window-controls .window-control:active {
+  background-color: rgb(223 190 202 / 60%);
+}
+
+.window-controls .window-control-close:hover {
+  background-color: #d9303e;
+  color: #fff;
+}
+
+.window-controls-error {
+  max-width: 220px;
+  color: var(--spacecom-red-dark);
+}
+
+.status-bar {
+  display: flex;
+  min-width: 0;
+  grid-row: 3;
+  grid-column: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 12px;
+  border-top: 1px solid var(--spacecom-outline);
+  background-color: rgb(255 248 250 / 88%);
+  color: var(--spacecom-muted);
+}
+
+.status-item {
+  min-width: 0;
+  height: 100%;
+  gap: 7px;
+  padding: 0 10px;
+  border-left: 1px solid var(--spacecom-outline);
+  white-space: nowrap;
+}
+
+.status-item > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status-runtime svg {
+  color: var(--spacecom-red);
+}
+
+.status-metrics {
+  display: flex;
+  min-width: 0;
+  margin-left: auto;
+}
+
+.status-metrics .status-item {
+  border-left: 1px solid var(--spacecom-outline);
+  color: #45344f;
+}
+
+@media (max-width: 1120px) {
+  .status-item {
+    gap: 4px;
+    padding-inline: 6px;
+  }
+
+  .status-runtime {
+    padding-right: 0;
+  }
+
+  .app-header {
+    padding-left: 15px;
+  }
+
+  .app-brand {
+    gap: 14px;
+  }
+
+  .header-actions {
+    gap: 6px;
+  }
+}

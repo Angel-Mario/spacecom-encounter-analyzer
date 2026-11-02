@@ -13,9 +13,8 @@ import {
 } from "@spacecom-encounter-analyzer/engine";
 import type { Encounter, MonitoredPerson, Timestamp } from "@spacecom-encounter-analyzer/engine";
 
-// Estratégia a usar quando timestamps estão fora de ordem:
-// "prompt" → pergunta ao usuário; "external" → ordena em disco; "cancel" → aborta.
-export type UnsortedStrategy = "prompt" | "external" | "cancel";
+// "auto" retries unordered input with disk-backed sorting without prompting.
+export type UnsortedStrategy = "prompt" | "auto" | "external" | "cancel";
 
 const WORKSPACE_ROOT = path.resolve(import.meta.dirname, "../../..");
 
@@ -109,6 +108,10 @@ const collectWithFallback = async (
         `Dataset timestamps are out of order at record ${error.recordNumber}; processing cancelled.`,
         { cause: error },
       );
+    }
+
+    if (strategy === "auto") {
+      return collectResults(readDatasetGroupsWithExternalSort(datasetPath));
     }
 
     const shouldContinue = await prompt(

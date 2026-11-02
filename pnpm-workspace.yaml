@@ -11,3 +11,8 @@ catalog:
   "@types/node": ^26.4.1
   vitest: 5.0.5
   varlock: 1.23.0
+permissions:
+  ultracite:
+    skills: true
+  varlock:
+    skills: true

@@ -130,7 +130,7 @@ Run the same processing without writing JSON files and print timing and memory m
 pnpm start -- benchmark
 ```
 
-If timestamps are out of order, the CLI asks whether to retry with disk-backed external sorting. Use `--unsorted external` to select this fallback without a prompt, or `--unsorted cancel` to stop instead.
+If timestamps are out of order, the CLI asks whether to retry with disk-backed external sorting. Use `--unsorted auto` to retry only when needed without prompting, `--unsorted external` to always use disk-backed sorting, or `--unsorted cancel` to stop instead.
 
 Command defaults can be configured in the varlock-managed [`.env.schema`](.env.schema); see the [CLI environment variables](apps/cli/README.md#environment-variables).
 
