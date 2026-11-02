@@ -14,17 +14,22 @@ O comando de benchmark exibe um resumo de cada conjunto de dados sem gravar arqu
 
 ![Exemplo da saída do benchmark](docs/images/benchmark.png)
 
+Como um extra além do que foi solicitado no desafio, também desenvolvi uma interface desktop multiplataforma com Tauri. A colagem mostra a tabela de resultados, o mapa interativo, os detalhes dos encontros e a saída da CLI:
+
+![Colagem da interface desktop com resultados, mapa, detalhes dos encontros e saída da CLI](docs/images/desktop-ui-collage.png)
+
 ## Arquitetura atual
 
 ```text
 apps/
   cli/       CLI para Node.js
+  desktop/   Interface desktop multiplataforma com React e Tauri
 packages/
   config/    Configuração compartilhada do TypeScript
   engine/    Motor reutilizável, tipos de domínio e infraestrutura de dados
 ```
 
-Para detalhes específicos de cada componente, consulte o [README da CLI em português](apps/cli/README.pt-BR.md) e o [README do motor em português](packages/engine/README.pt-BR.md).
+Para detalhes específicos de cada componente, consulte o [README da CLI em português](apps/cli/README.pt-BR.md), o [README do app desktop em português](apps/desktop/README.pt-BR.md) e o [README do motor em português](packages/engine/README.pt-BR.md).
 
 ## Regras do desafio e solução
 
@@ -153,6 +158,21 @@ Execute a CLI compilada:
 ```bash
 pnpm --filter @spacecom-encounter-analyzer/cli start
 ```
+
+## Releases do aplicativo desktop
+
+Os instaladores desktop são compilados para Windows x64 (`.msi` e `.exe`), macOS Intel e Apple silicon (`.dmg`) e Linux x64 (`.deb` e `.AppImage`). Os instaladores incluem a CLI e o runtime do Node.js, então os usuários não precisam instalar Node.js nem obter o código-fonte. Na primeira inicialização, o aplicativo cria as pastas de entrada e saída no diretório de dados do usuário; também é possível selecionar outras pastas.
+
+Para publicar uma release, atualize a versão do desktop de forma consistente em `apps/desktop/package.json`, `apps/desktop/src-tauri/tauri.conf.json` e `apps/desktop/src-tauri/Cargo.toml`, faça commit e envie essas alterações. Em seguida, envie uma tag com a mesma versão. Para a versão atual `0.1.0`:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+O workflow **Desktop release** do GitHub Actions compila cada plataforma e cria um rascunho de GitHub Release com os instaladores anexados. Revise e publique o rascunho quando os arquivos estiverem prontos. O workflow verifica se a tag e os três campos de versão correspondem.
+
+O workflow pode assinar e notarizar as compilações para macOS quando os secrets Apple Developer necessários estiverem configurados no repositório (`APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`, `KEYCHAIN_PASSWORD`, `APPLE_ID`, `APPLE_PASSWORD` e `APPLE_TEAM_ID`). Sem eles, os DMGs são gerados sem assinatura e notarização, e o Gatekeeper pode bloquear o aplicativo; não publique esses DMGs como downloads prontos para produção. Os instaladores do Windows não têm assinatura e podem exibir avisos do SmartScreen. Os pacotes `.deb` para Linux declaram as dependências do sistema; usuários do `.AppImage` podem precisar de um runtime WebKitGTK compatível.
 
 ## Verificação de tipos e qualidade do código
 

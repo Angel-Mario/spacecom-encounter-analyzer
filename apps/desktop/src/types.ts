@@ -34,3 +34,8 @@ export interface AnalysisResult {
   encounters: Encounter[];
   stats: AnalysisStats;
 }
+
+export interface DefaultDirectories {
+  inputDirectory: string;
+  outputDirectory: string;
+}
