@@ -5,6 +5,7 @@ import {
   existsSync,
   lstatSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
   realpathSync,
   rmSync,
@@ -75,6 +76,70 @@ if (existsSync(engineDependencyPath)) {
     rmSync(enginePackageTarget, { force: true, recursive: true });
   }
 }
+
+const virtualStoreDirectory = path.join(cliDirectory, "node_modules", ".pnpm");
+for (const entry of readdirSync(virtualStoreDirectory)) {
+  if (
+    entry.startsWith("@spacecom-encounter-analyze_") ||
+    entry.startsWith("zod@")
+  ) {
+    rmSync(path.join(virtualStoreDirectory, entry), {
+      force: true,
+      recursive: true,
+    });
+  }
+}
+
+rmSync(path.join(cliDirectory, "node_modules", "zod"), {
+  force: true,
+  recursive: true,
+});
+rmSync(path.join(virtualStoreDirectory, "node_modules", "zod"), {
+  force: true,
+  recursive: true,
+});
+for (const entry of [
+  "src",
+  "README.md",
+  "README.pt-BR.md",
+  "pnpm-lock.yaml",
+  "pnpm-workspace.yaml",
+  "tsconfig.json",
+  "tsdown.config.ts",
+]) {
+  rmSync(path.join(cliDirectory, entry), { force: true, recursive: true });
+}
+rmSync(path.join(cliDirectory, "node_modules", ".pnpm", "lock.yaml"), {
+  force: true,
+});
+rmSync(
+  path.join(cliDirectory, "node_modules", ".pnpm-workspace-state-v1.json"),
+  { force: true }
+);
+
+const varlockPackageDirectory = realpathSync(
+  path.join(cliDirectory, "node_modules", "varlock")
+);
+rmSync(path.join(varlockPackageDirectory, "README.md"), { force: true });
+rmSync(path.join(varlockPackageDirectory, "skills"), {
+  force: true,
+  recursive: true,
+});
+
+const removeDevelopmentArtifacts = (directory) => {
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const entryPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      removeDevelopmentArtifacts(entryPath);
+    } else if (
+      entry.name.endsWith(".map") ||
+      /\.d\.(?:cts|mts)$/u.test(entry.name)
+    ) {
+      rmSync(entryPath, { force: true });
+    }
+  }
+};
+removeDevelopmentArtifacts(path.join(varlockPackageDirectory, "dist"));
 
 copyFileSync(process.execPath, path.join(runtimeDirectory, nodeExecutableName));
 

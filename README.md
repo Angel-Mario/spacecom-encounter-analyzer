@@ -14,9 +14,39 @@ The benchmark command reports a summary for each dataset without writing JSON fi
 
 ![Example benchmark output](docs/images/benchmark.png)
 
-As an extra beyond the challenge requirements, I also built a cross-platform desktop UI with Tauri. The collage shows its results table, interactive map, encounter details, and CLI output:
+## Desktop app (extra)
 
-![Desktop app collage showing results, map, encounter details, and CLI output](docs/images/desktop-ui-collage.png)
+<p align="center">
+  <img src="docs/images/desktop-app-icon.svg" alt="Spacecom Encounter Analyzer app icon" width="128">
+</p>
+
+As an extra beyond the challenge requirements, I also built a cross-platform desktop UI with Tauri. Its results, map, encounter details, and CLI output are shown separately below. Each screenshot is centered with a short description:
+
+[Download the desktop app](https://github.com/Angel-Mario/spacecom-encounter-analyzer/releases/latest) from GitHub Releases. Windows users can also get the [portable ZIP for v0.1.6](https://github.com/Angel-Mario/spacecom-encounter-analyzer/releases/download/v0.1.6/Spacecom-Encounter-Analyzer_v0.1.6_windows-x64_portable.zip): extract it and run `Spacecom Encounter Analyzer.exe`. The portable app requires the [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/).
+
+**Results table:** Browse encounters with their type, monitored IDs, timestamp, and distance.
+
+<p align="center"><img src="docs/images/desktop-results.png" alt="Desktop app results table" width="100%"></p>
+
+**Selected encounter:** Inspect one encounter on the map, including its location and summary.
+
+<p align="center"><img src="docs/images/desktop-map-selected.png" alt="Desktop app map with a selected encounter" width="100%"></p>
+
+**All encounters on the map:** View encounters across Brazil, color-coded by type.
+
+<p align="center"><img src="docs/images/desktop-map-all-encounters.png" alt="Desktop app map showing all encounters" width="100%"></p>
+
+**Encounter details:** Review both monitored people’s coordinates and the Haversine distance calculation.
+
+<p align="center"><img src="docs/images/desktop-encounter-details.png" alt="Desktop app encounter details" width="100%"></p>
+
+**CLI output:** Follow dataset processing and its encounter counts and performance metrics inside the desktop app.
+
+<p align="center"><img src="docs/images/desktop-cli-output.png" alt="Desktop app CLI output" width="100%"></p>
+
+**Final dataset output:** See the completed processing status for the final dataset.
+
+<p align="center"><img src="docs/images/desktop-cli-output-final.png" alt="Desktop app CLI output for the final dataset" width="100%"></p>
 
 ## Current architecture
 
@@ -161,18 +191,18 @@ pnpm --filter @spacecom-encounter-analyzer/cli start
 
 ## Desktop app releases
 
-Desktop installers are built for Windows x64 (`.msi` and `.exe`), macOS Intel and Apple silicon (`.dmg`), and Linux x64 (`.deb` and `.AppImage`). The installers include the CLI and a Node.js runtime, so end users do not need Node.js or a source checkout. The first launch creates input and output folders in the app's user data directory; users can also choose other folders.
+Desktop releases are available from [GitHub Releases](https://github.com/Angel-Mario/spacecom-encounter-analyzer/releases/latest). Installers are built for Windows x64 (`.msi` and `.exe`), macOS Intel and Apple silicon (`.dmg`), and Linux x64 (`.deb` and `.AppImage`). The Windows portable ZIP is also available; extract it and run `Spacecom Encounter Analyzer.exe`. It requires the [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/). Installers and the portable bundle include the CLI and a Node.js runtime, so end users do not need Node.js or a source checkout. The first launch creates input and output folders in the app's user data directory; users can also choose other folders.
 
-To publish a release, update the desktop version consistently in `apps/desktop/package.json`, `apps/desktop/src-tauri/tauri.conf.json`, and `apps/desktop/src-tauri/Cargo.toml`, commit and push those changes, then push a matching version tag. For the current `0.1.0` version:
+To publish a release, update the desktop version consistently in `apps/desktop/package.json`, `apps/desktop/src-tauri/tauri.conf.json`, and `apps/desktop/src-tauri/Cargo.toml`, commit and push those changes, then push a matching version tag. For the current `0.1.6` version:
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.1.6
+git push origin v0.1.6
 ```
 
-The **Desktop release** GitHub Actions workflow builds each platform and creates a draft GitHub Release with the installers attached. Review and publish the draft when the artifacts are ready. The workflow checks that the tag and all three version fields match.
+The **Desktop release** GitHub Actions workflow builds each platform and publishes a GitHub Release with the installers and portable ZIP attached. The workflow checks that the tag and all three version fields match.
 
-The workflow can sign and notarize macOS builds when the repository has the required Apple Developer secrets configured (`APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`, `KEYCHAIN_PASSWORD`, `APPLE_ID`, `APPLE_PASSWORD`, and `APPLE_TEAM_ID`). Without them, the generated DMGs are unsigned and unnotarized, and Gatekeeper may block the app; do not publish those DMGs as production-ready downloads. Windows installers are unsigned and may trigger SmartScreen. Linux `.deb` packages declare their system dependencies; `.AppImage` users may need a compatible WebKitGTK runtime.
+macOS DMGs are unsigned and unnotarized; Gatekeeper may block the app, and users may need to allow it manually in System Settings. Windows installers are unsigned and may trigger SmartScreen. Linux `.deb` packages declare their system dependencies; `.AppImage` users may need a compatible WebKitGTK runtime.
 
 ## License
 

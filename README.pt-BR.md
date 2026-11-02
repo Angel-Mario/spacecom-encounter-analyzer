@@ -14,9 +14,39 @@ O comando de benchmark exibe um resumo de cada conjunto de dados sem gravar arqu
 
 ![Exemplo da saída do benchmark](docs/images/benchmark.png)
 
-Como um extra além do que foi solicitado no desafio, também desenvolvi uma interface desktop multiplataforma com Tauri. A colagem mostra a tabela de resultados, o mapa interativo, os detalhes dos encontros e a saída da CLI:
+## Aplicativo desktop (extra)
 
-![Colagem da interface desktop com resultados, mapa, detalhes dos encontros e saída da CLI](docs/images/desktop-ui-collage.png)
+<p align="center">
+  <img src="docs/images/desktop-app-icon.svg" alt="Ícone do aplicativo Spacecom Encounter Analyzer" width="128">
+</p>
+
+Como um extra além do que foi solicitado no desafio, também desenvolvi uma interface desktop multiplataforma com Tauri. A tabela de resultados, o mapa, os detalhes dos encontros e a saída da CLI aparecem separadamente abaixo, cada captura centralizada e acompanhada de uma breve explicação:
+
+[Baixe o aplicativo desktop](https://github.com/Angel-Mario/spacecom-encounter-analyzer/releases/latest) na página de releases do GitHub. No Windows, também está disponível o [ZIP portátil da versão 0.1.6](https://github.com/Angel-Mario/spacecom-encounter-analyzer/releases/download/v0.1.6/Spacecom-Encounter-Analyzer_v0.1.6_windows-x64_portable.zip): extraia os arquivos e execute `Spacecom Encounter Analyzer.exe`. O aplicativo portátil requer o [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/).
+
+**Tabela de resultados:** Consulte os encontros com tipo, IDs dos monitorados, data e hora e distância.
+
+<p align="center"><img src="docs/images/desktop-results.png" alt="Tabela de resultados do aplicativo desktop" width="100%"></p>
+
+**Encontro selecionado:** Consulte um encontro no mapa, incluindo sua localização e seu resumo.
+
+<p align="center"><img src="docs/images/desktop-map-selected.png" alt="Mapa do aplicativo desktop com um encontro selecionado" width="100%"></p>
+
+**Todos os encontros no mapa:** Visualize os encontros no Brasil, identificados por tipo e cor.
+
+<p align="center"><img src="docs/images/desktop-map-all-encounters.png" alt="Mapa do aplicativo desktop com todos os encontros" width="100%"></p>
+
+**Detalhes do encontro:** Confira as coordenadas de ambos os monitorados e o cálculo da distância de Haversine.
+
+<p align="center"><img src="docs/images/desktop-encounter-details.png" alt="Detalhes de um encontro no aplicativo desktop" width="100%"></p>
+
+**Saída da CLI:** Acompanhe o processamento dos conjuntos de dados, a quantidade de encontros e as métricas de desempenho no aplicativo desktop.
+
+<p align="center"><img src="docs/images/desktop-cli-output.png" alt="Saída da CLI no aplicativo desktop" width="100%"></p>
+
+**Saída do conjunto final:** Veja o status de conclusão do processamento do último conjunto de dados.
+
+<p align="center"><img src="docs/images/desktop-cli-output-final.png" alt="Saída da CLI no aplicativo desktop para o conjunto final" width="100%"></p>
 
 ## Arquitetura atual
 
@@ -161,18 +191,18 @@ pnpm --filter @spacecom-encounter-analyzer/cli start
 
 ## Releases do aplicativo desktop
 
-Os instaladores desktop são compilados para Windows x64 (`.msi` e `.exe`), macOS Intel e Apple silicon (`.dmg`) e Linux x64 (`.deb` e `.AppImage`). Os instaladores incluem a CLI e o runtime do Node.js, então os usuários não precisam instalar Node.js nem obter o código-fonte. Na primeira inicialização, o aplicativo cria as pastas de entrada e saída no diretório de dados do usuário; também é possível selecionar outras pastas.
+As releases desktop estão disponíveis na página de [releases do GitHub](https://github.com/Angel-Mario/spacecom-encounter-analyzer/releases/latest). Os instaladores são compilados para Windows x64 (`.msi` e `.exe`), macOS Intel e Apple silicon (`.dmg`) e Linux x64 (`.deb` e `.AppImage`). Também há um ZIP portátil para Windows: extraia os arquivos e execute `Spacecom Encounter Analyzer.exe`. Ele requer o [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/). Os instaladores e o pacote portátil incluem a CLI e o runtime do Node.js, então os usuários não precisam instalar Node.js nem obter o código-fonte. Na primeira inicialização, o aplicativo cria as pastas de entrada e saída no diretório de dados do usuário; também é possível selecionar outras pastas.
 
-Para publicar uma release, atualize a versão do desktop de forma consistente em `apps/desktop/package.json`, `apps/desktop/src-tauri/tauri.conf.json` e `apps/desktop/src-tauri/Cargo.toml`, faça commit e envie essas alterações. Em seguida, envie uma tag com a mesma versão. Para a versão atual `0.1.0`:
+Para publicar uma release, atualize a versão do desktop de forma consistente em `apps/desktop/package.json`, `apps/desktop/src-tauri/tauri.conf.json` e `apps/desktop/src-tauri/Cargo.toml`, faça commit e envie essas alterações. Em seguida, envie uma tag com a mesma versão. Para a versão atual `0.1.6`:
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.1.6
+git push origin v0.1.6
 ```
 
-O workflow **Desktop release** do GitHub Actions compila cada plataforma e cria um rascunho de GitHub Release com os instaladores anexados. Revise e publique o rascunho quando os arquivos estiverem prontos. O workflow verifica se a tag e os três campos de versão correspondem.
+O workflow **Desktop release** do GitHub Actions compila cada plataforma e publica uma GitHub Release com os instaladores e o ZIP portátil anexados. O workflow verifica se a tag e os três campos de versão correspondem.
 
-O workflow pode assinar e notarizar as compilações para macOS quando os secrets Apple Developer necessários estiverem configurados no repositório (`APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`, `KEYCHAIN_PASSWORD`, `APPLE_ID`, `APPLE_PASSWORD` e `APPLE_TEAM_ID`). Sem eles, os DMGs são gerados sem assinatura e notarização, e o Gatekeeper pode bloquear o aplicativo; não publique esses DMGs como downloads prontos para produção. Os instaladores do Windows não têm assinatura e podem exibir avisos do SmartScreen. Os pacotes `.deb` para Linux declaram as dependências do sistema; usuários do `.AppImage` podem precisar de um runtime WebKitGTK compatível.
+Os DMGs para macOS não têm assinatura nem notarização; o Gatekeeper pode bloquear o aplicativo, e talvez seja necessário permiti-lo manualmente nos Ajustes do Sistema. Os instaladores do Windows não têm assinatura e podem exibir avisos do SmartScreen. Os pacotes `.deb` para Linux declaram as dependências do sistema; usuários do `.AppImage` podem precisar de um runtime WebKitGTK compatível.
 
 ## Licença
 

@@ -91,11 +91,6 @@ jobs:
 
           Extract this folder and run "Spacecom Encounter Analyzer.exe".
           Microsoft Edge WebView2 Runtime is required.
-
-          Analizador de Encuentros Espaciales (portable)
-
-          Extrae esta carpeta y ejecuta "Spacecom Encounter Analyzer.exe".
-          Se requiere Microsoft Edge WebView2 Runtime.
           "@ | Set-Content "$portableDirectory/README.txt"
           Compress-Archive -Path "$portableDirectory/*" -DestinationPath "portable/Spacecom-Encounter-Analyzer_${env:GITHUB_REF_NAME}_windows-x64_portable.zip"
 
