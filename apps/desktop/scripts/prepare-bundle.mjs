@@ -3,8 +3,12 @@ import {
   chmodSync,
   copyFileSync,
   existsSync,
+  lstatSync,
   mkdirSync,
+  readFileSync,
+  realpathSync,
   rmSync,
+  writeFileSync,
 } from "node:fs";
 import path from "node:path";
 
@@ -48,6 +52,30 @@ copyFileSync(
   path.join(repositoryRoot, ".env.schema"),
   path.join(cliDirectory, ".env.schema")
 );
+const cliPackagePath = path.join(cliDirectory, "package.json");
+const cliPackage = JSON.parse(readFileSync(cliPackagePath, "utf-8"));
+delete cliPackage.dependencies["@spacecom-encounter-analyzer/engine"];
+writeFileSync(cliPackagePath, `${JSON.stringify(cliPackage, null, 2)}\n`);
+
+const engineDependencyPath = path.join(
+  cliDirectory,
+  "node_modules",
+  "@spacecom-encounter-analyzer",
+  "engine"
+);
+if (existsSync(engineDependencyPath)) {
+  const isEngineDependencySymlink =
+    lstatSync(engineDependencyPath).isSymbolicLink();
+  const enginePackageTarget = isEngineDependencySymlink
+    ? realpathSync(engineDependencyPath)
+    : null;
+  rmSync(engineDependencyPath, { force: true, recursive: true });
+
+  if (enginePackageTarget) {
+    rmSync(enginePackageTarget, { force: true, recursive: true });
+  }
+}
+
 copyFileSync(process.execPath, path.join(runtimeDirectory, nodeExecutableName));
 
 const nodeDirectory = path.dirname(process.execPath);
