@@ -22,7 +22,7 @@ The benchmark command reports a summary for each dataset without writing JSON fi
 
 As an extra beyond the challenge requirements, I also built a cross-platform desktop UI with Tauri. Its results, map, encounter details, and CLI output are shown separately below. Each screenshot is centered with a short description:
 
-[Download the desktop app](https://github.com/Angel-Mario/spacecom-encounter-analyzer/releases/latest) from GitHub Releases. Windows users can also get the [portable ZIP for v0.1.6](https://github.com/Angel-Mario/spacecom-encounter-analyzer/releases/download/v0.1.6/Spacecom-Encounter-Analyzer_v0.1.6_windows-x64_portable.zip): extract it and run `Spacecom Encounter Analyzer.exe`. The portable app requires the [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/).
+[Download the desktop app](https://github.com/Angel-Mario/spacecom-encounter-analyzer/releases/latest) from GitHub Releases. Windows users can also get the [portable ZIP for v0.1.7](https://github.com/Angel-Mario/spacecom-encounter-analyzer/releases/download/v0.1.7/Spacecom-Encounter-Analyzer_v0.1.7_windows-x64_portable.zip): extract it and run `Spacecom Encounter Analyzer.exe`. The portable app requires the [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/).
 
 **Results table:** Browse encounters with their type, monitored IDs, timestamp, and distance.
 
@@ -193,11 +193,11 @@ pnpm --filter @spacecom-encounter-analyzer/cli start
 
 Desktop releases are available from [GitHub Releases](https://github.com/Angel-Mario/spacecom-encounter-analyzer/releases/latest). Installers are built for Windows x64 (`.msi` and `.exe`), macOS Intel and Apple silicon (`.dmg`), and Linux x64 (`.deb` and `.AppImage`). The Windows portable ZIP is also available; extract it and run `Spacecom Encounter Analyzer.exe`. It requires the [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/). Installers and the portable bundle include the CLI and a Node.js runtime, so end users do not need Node.js or a source checkout. The first launch creates input and output folders in the app's user data directory; users can also choose other folders.
 
-To publish a release, update the desktop version consistently in `apps/desktop/package.json`, `apps/desktop/src-tauri/tauri.conf.json`, and `apps/desktop/src-tauri/Cargo.toml`, commit and push those changes, then push a matching version tag. For the current `0.1.6` version:
+To publish a release, update the desktop version consistently in `apps/desktop/package.json`, `apps/desktop/src-tauri/tauri.conf.json`, and `apps/desktop/src-tauri/Cargo.toml`, commit and push those changes, then push a matching version tag. For the current `0.1.7` version:
 
 ```bash
-git tag v0.1.6
-git push origin v0.1.6
+git tag v0.1.7
+git push origin v0.1.7
 ```
 
 The **Desktop release** GitHub Actions workflow builds each platform and publishes a GitHub Release with the installers and portable ZIP attached. The workflow checks that the tag and all three version fields match.

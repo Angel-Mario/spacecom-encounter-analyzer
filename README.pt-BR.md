@@ -22,7 +22,7 @@ O comando de benchmark exibe um resumo de cada conjunto de dados sem gravar arqu
 
 Como um extra além do que foi solicitado no desafio, também desenvolvi uma interface desktop multiplataforma com Tauri. A tabela de resultados, o mapa, os detalhes dos encontros e a saída da CLI aparecem separadamente abaixo, cada captura centralizada e acompanhada de uma breve explicação:
 
-[Baixe o aplicativo desktop](https://github.com/Angel-Mario/spacecom-encounter-analyzer/releases/latest) na página de releases do GitHub. No Windows, também está disponível o [ZIP portátil da versão 0.1.6](https://github.com/Angel-Mario/spacecom-encounter-analyzer/releases/download/v0.1.6/Spacecom-Encounter-Analyzer_v0.1.6_windows-x64_portable.zip): extraia os arquivos e execute `Spacecom Encounter Analyzer.exe`. O aplicativo portátil requer o [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/).
+[Baixe o aplicativo desktop](https://github.com/Angel-Mario/spacecom-encounter-analyzer/releases/latest) na página de releases do GitHub. No Windows, também está disponível o [ZIP portátil da versão 0.1.7](https://github.com/Angel-Mario/spacecom-encounter-analyzer/releases/download/v0.1.7/Spacecom-Encounter-Analyzer_v0.1.7_windows-x64_portable.zip): extraia os arquivos e execute `Spacecom Encounter Analyzer.exe`. O aplicativo portátil requer o [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/).
 
 **Tabela de resultados:** Consulte os encontros com tipo, IDs dos monitorados, data e hora e distância.
 
@@ -193,11 +193,11 @@ pnpm --filter @spacecom-encounter-analyzer/cli start
 
 As releases desktop estão disponíveis na página de [releases do GitHub](https://github.com/Angel-Mario/spacecom-encounter-analyzer/releases/latest). Os instaladores são compilados para Windows x64 (`.msi` e `.exe`), macOS Intel e Apple silicon (`.dmg`) e Linux x64 (`.deb` e `.AppImage`). Também há um ZIP portátil para Windows: extraia os arquivos e execute `Spacecom Encounter Analyzer.exe`. Ele requer o [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/). Os instaladores e o pacote portátil incluem a CLI e o runtime do Node.js, então os usuários não precisam instalar Node.js nem obter o código-fonte. Na primeira inicialização, o aplicativo cria as pastas de entrada e saída no diretório de dados do usuário; também é possível selecionar outras pastas.
 
-Para publicar uma release, atualize a versão do desktop de forma consistente em `apps/desktop/package.json`, `apps/desktop/src-tauri/tauri.conf.json` e `apps/desktop/src-tauri/Cargo.toml`, faça commit e envie essas alterações. Em seguida, envie uma tag com a mesma versão. Para a versão atual `0.1.6`:
+Para publicar uma release, atualize a versão do desktop de forma consistente em `apps/desktop/package.json`, `apps/desktop/src-tauri/tauri.conf.json` e `apps/desktop/src-tauri/Cargo.toml`, faça commit e envie essas alterações. Em seguida, envie uma tag com a mesma versão. Para a versão atual `0.1.7`:
 
 ```bash
-git tag v0.1.6
-git push origin v0.1.6
+git tag v0.1.7
+git push origin v0.1.7
 ```
 
 O workflow **Desktop release** do GitHub Actions compila cada plataforma e publica uma GitHub Release com os instaladores e o ZIP portátil anexados. O workflow verifica se a tag e os três campos de versão correspondem.

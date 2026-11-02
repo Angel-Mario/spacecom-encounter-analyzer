@@ -80,7 +80,7 @@ if (existsSync(engineDependencyPath)) {
 const virtualStoreDirectory = path.join(cliDirectory, "node_modules", ".pnpm");
 for (const entry of readdirSync(virtualStoreDirectory)) {
   if (
-    entry.startsWith("@spacecom-encounter-analyze_") ||
+    entry.startsWith("@spacecom-encounter-analyze") ||
     entry.startsWith("zod@")
   ) {
     rmSync(path.join(virtualStoreDirectory, entry), {
