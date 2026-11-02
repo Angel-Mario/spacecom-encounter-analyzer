@@ -27,6 +27,12 @@ Compile o frontend desktop com:
 pnpm --filter @spacecom-encounter-analyzer/desktop build
 ```
 
+Execute os testes da interface desktop com:
+
+```sh
+pnpm --filter @spacecom-encounter-analyzer/desktop test
+```
+
 A interface desktop usa Fluent UI React v9 (`@fluentui/react-components`) e Fluent System Icons (`@fluentui/react-icons`). O dashboard é dividido em componentes independentes em `src/components/`, com estilos de layout compartilhados em `src/styles/`.
 
 A interface usa o logotipo oficial da Spacecom, disponível em [spacecom.com.br](https://www.spacecom.com.br/imgs/logo-spc.svg), e um tema claro com as cores da marca.

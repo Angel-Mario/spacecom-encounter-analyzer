@@ -29,6 +29,12 @@ Build the desktop frontend with:
 pnpm --filter @spacecom-encounter-analyzer/desktop build
 ```
 
+Run the desktop UI tests with:
+
+```sh
+pnpm --filter @spacecom-encounter-analyzer/desktop test
+```
+
 The desktop frontend uses Fluent UI React v9 (`@fluentui/react-components`) and Fluent System Icons (`@fluentui/react-icons`). Its dashboard is split into independent components under `src/components/`, with shared layout styles under `src/styles/`.
 
 The interface uses the official Spacecom logo from [spacecom.com.br](https://www.spacecom.com.br/imgs/logo-spc.svg) and a light brand theme.
