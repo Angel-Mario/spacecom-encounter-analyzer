@@ -24,26 +24,16 @@ if (!pnpmCli) {
     "Run this script through pnpm so the workspace CLI can be deployed."
   );
 }
-const pnpmCommand = pnpmCli.toLowerCase().endsWith(".exe")
-  ? pnpmCli
-  : process.execPath;
-const pnpmArguments =
-  pnpmCommand === pnpmCli
-    ? [
-        "--filter",
-        "@spacecom-encounter-analyzer/cli",
-        "deploy",
-        "--prod",
-        cliDirectory,
-      ]
-    : [
-        pnpmCli,
-        "--filter",
-        "@spacecom-encounter-analyzer/cli",
-        "deploy",
-        "--prod",
-        cliDirectory,
-      ];
+const pnpmIsJavaScript = /\.(?:cjs|js)$/iu.test(pnpmCli);
+const pnpmCommand = pnpmIsJavaScript ? process.execPath : pnpmCli;
+const pnpmArguments = [
+  ...(pnpmIsJavaScript ? [pnpmCli] : []),
+  "--filter",
+  "@spacecom-encounter-analyzer/cli",
+  "deploy",
+  "--prod",
+  cliDirectory,
+];
 
 rmSync(cliDirectory, { force: true, recursive: true });
 rmSync(runtimeDirectory, { force: true, recursive: true });
@@ -52,6 +42,7 @@ mkdirSync(runtimeDirectory, { recursive: true });
 
 execFileSync(pnpmCommand, pnpmArguments, {
   cwd: repositoryRoot,
+  shell: process.platform === "win32" && /\.(?:cmd|bat)$/iu.test(pnpmCommand),
   stdio: "inherit",
 });
 
