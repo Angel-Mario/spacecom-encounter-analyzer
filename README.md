@@ -174,6 +174,10 @@ The **Desktop release** GitHub Actions workflow builds each platform and creates
 
 The workflow can sign and notarize macOS builds when the repository has the required Apple Developer secrets configured (`APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`, `KEYCHAIN_PASSWORD`, `APPLE_ID`, `APPLE_PASSWORD`, and `APPLE_TEAM_ID`). Without them, the generated DMGs are unsigned and unnotarized, and Gatekeeper may block the app; do not publish those DMGs as production-ready downloads. Windows installers are unsigned and may trigger SmartScreen. Linux `.deb` packages declare their system dependencies; `.AppImage` users may need a compatible WebKitGTK runtime.
 
+## License
+
+This project is distributed under the [MIT License](LICENSE).
+
 ## Type checking and code quality
 
 ```bash

@@ -119,7 +119,13 @@ fn analysis_runtime(app: &AppHandle) -> Result<(PathBuf, PathBuf, PathBuf), Stri
         ));
     }
 
-    Ok((default_data_root(app)?, cli_entry, node_runtime))
+    let cli_working_directory = cli_entry
+        .parent()
+        .and_then(Path::parent)
+        .ok_or_else(|| "Could not locate the bundled CLI directory.".to_owned())?
+        .to_path_buf();
+
+    Ok((cli_working_directory, cli_entry, node_runtime))
 }
 
 fn output_file_name(dataset_path: &Path) -> Result<String, String> {
@@ -223,7 +229,8 @@ async fn run_analysis(
 ) -> Result<AnalysisResult, String> {
     tauri::async_runtime::spawn_blocking(move || {
         let started_at = Instant::now();
-        let (working_directory, cli_entry, node_runtime) = analysis_runtime(&app)?;
+        let (cli_working_directory, cli_entry, node_runtime) = analysis_runtime(&app)?;
+        let data_root = default_data_root(&app)?;
 
         if !cli_entry.is_file() {
             return Err(
@@ -233,10 +240,17 @@ async fn run_analysis(
         }
 
         let resolved_input_directory =
-            resolve_directory(&working_directory, Path::new(&input_directory));
+            resolve_directory(&data_root, Path::new(&input_directory));
         let resolved_output_directory =
-            resolve_directory(&working_directory, Path::new(&output_directory));
+            resolve_directory(&data_root, Path::new(&output_directory));
         let dataset_paths = dataset_paths(&resolved_input_directory)?;
+        if dataset_paths.is_empty() {
+            return Err(format!(
+                "No .txt datasets found in \"{}\". Add dataset files to this input folder and try again.",
+                resolved_input_directory.display()
+            ));
+        }
+
         let mut rows_processed = 0;
         for dataset_path in &dataset_paths {
             rows_processed += count_dataset_rows(dataset_path)?;
@@ -244,11 +258,11 @@ async fn run_analysis(
         let mut child = Command::new(node_runtime)
             .arg(cli_entry)
             .args(["process-all", "--input"])
-            .arg(&input_directory)
+            .arg(&resolved_input_directory)
             .arg("--output")
-            .arg(&output_directory)
+            .arg(&resolved_output_directory)
             .args(["--unsorted", "auto"])
-            .current_dir(&working_directory)
+            .current_dir(&cli_working_directory)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
@@ -448,6 +462,17 @@ mod tests {
         assert_eq!(
             resolve_directory(Path::new("workspace"), &absolute_directory),
             absolute_directory
+        );
+    }
+
+    #[test]
+    fn returns_no_dataset_paths_for_an_empty_input_directory() {
+        let temporary_directory = TestDirectory::new();
+
+        assert!(
+            dataset_paths(temporary_directory.path())
+                .unwrap()
+                .is_empty()
         );
     }
 

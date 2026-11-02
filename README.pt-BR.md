@@ -174,6 +174,10 @@ O workflow **Desktop release** do GitHub Actions compila cada plataforma e cria 
 
 O workflow pode assinar e notarizar as compilações para macOS quando os secrets Apple Developer necessários estiverem configurados no repositório (`APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`, `KEYCHAIN_PASSWORD`, `APPLE_ID`, `APPLE_PASSWORD` e `APPLE_TEAM_ID`). Sem eles, os DMGs são gerados sem assinatura e notarização, e o Gatekeeper pode bloquear o aplicativo; não publique esses DMGs como downloads prontos para produção. Os instaladores do Windows não têm assinatura e podem exibir avisos do SmartScreen. Os pacotes `.deb` para Linux declaram as dependências do sistema; usuários do `.AppImage` podem precisar de um runtime WebKitGTK compatível.
 
+## Licença
+
+Este projeto é distribuído sob a [Licença MIT](LICENSE).
+
 ## Verificação de tipos e qualidade do código
 
 ```bash
